@@ -1,0 +1,28 @@
+.ant-tabs .ant-tabs-nav{
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.ant-tabs .ant-tabs-nav::before{
+border-bottom: none !important;
+}
+.ant-tabs .ant-tabs-ink-bar{
+    background-color: rgb(206, 160, 138) !important
+}
+.ant-tabs .ant-tabs-tab{
+    color: #969696 !important;
+    font-weight: 500;
+}
+.ant-tabs .ant-tabs-tab-btn{
+    font-size: 16px;
+}
+.ant-tabs .ant-tabs-tab-active .ant-tabs-tab-btn{
+    color: black !important;
+
+}
+.ant-tabs .ant-tabs-tab:hover {
+    box-sizing: border-box;
+    border-bottom: 2px solid rgb(206, 160, 138);
+    padding-bottom: 9px !important;
+    transition: 2ms all ease-in-out;
+
+}

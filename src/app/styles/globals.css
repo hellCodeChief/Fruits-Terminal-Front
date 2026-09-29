@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.c_container {
+  padding: 0 15px;
+}
+
+@import "./font.style.css";
+@import "./about-us.css";
+@import "./antTabs.css";
+
+.enamad-wrapper a {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+.enamad-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
