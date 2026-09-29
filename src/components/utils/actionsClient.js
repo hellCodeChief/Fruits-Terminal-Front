@@ -108,14 +108,11 @@ export const addProductClient = async (_productData) => {
   try {
     const response = await authFetch(`${BASE_URL}/product`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(_productData),
+      body: _productData,
     });
     return response;
   } catch (err) {
-    throw new Error("Failed to add category", err);
+    throw new Error("Failed to add product");
   }
 };
 
@@ -123,14 +120,11 @@ export const editProductClient = async (_productData, _id) => {
   try {
     const response = await authFetch(`${BASE_URL}/product/${_id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(_productData),
+      body: _productData,
     });
     return response;
   } catch (err) {
-    throw new Error("Failed to add category", err);
+    throw new Error("Failed to edit product");
   }
 };
 

@@ -1,16 +1,32 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Form, Input, Select, Button, Switch, message, Upload } from "antd";
+import React, { useEffect, useRef, useState } from "react";
+import { Form, Input, InputNumber, Button, message } from "antd";
+import { CameraOutlined, UploadOutlined } from "@ant-design/icons";
 import {
   addProductClient,
   editProductClient,
-  uploadImage,
 } from "@/components/utils/actionsClient";
-import { UploadOutlined } from "@ant-design/icons";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+const saleVariant = (product: any) => {
+  if (!Array.isArray(product?.variants) || product.variants.length === 0) {
+    return null;
+  }
+  return (
+    product.variants.find(
+      (variant: any) => variant.id === product.defaultVariantId
+    ) || product.variants[0]
+  );
+};
+
+const existingImageUrl = (product: any) => {
+  const file = product?.files?.[0];
+  if (!file?.id) return "";
+  return `${BASE_URL}/files/${file.id}/product`;
+};
 
 const AddProductForm = ({
-  allProducts,
-  allCategories,
   refetchProduct,
   editProductData,
   onSuccess,
@@ -18,106 +34,106 @@ const AddProductForm = ({
   time,
 }: any) => {
   const [loading, setLoading] = useState(false);
-  const [fileList, setFileList] = useState<any[]>([]);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [form] = Form.useForm();
-
-  const formattedCategories = allCategories.map((category: any) => ({
-    label: category.displayName,
-    value: category.id,
-  }));
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const savedImage = isEdit ? existingImageUrl(editProductData) : "";
 
   useEffect(() => {
+    setPhotoFile(null);
     if (isEdit && editProductData) {
+      const variant = saleVariant(editProductData);
+      const image = existingImageUrl(editProductData);
+      setPreviewUrl(image);
       form.setFieldsValue({
-        title: editProductData.title,
-        slug: editProductData.slug,
-        isActive: editProductData.isActive,
-        categoryIds: editProductData.categories?.map((cat: any) => cat.id),
+        name: variant?.name || editProductData.slug || "",
+        price:
+          variant?.price !== undefined && variant?.price !== null && variant?.price !== ""
+            ? Number(variant.price)
+            : undefined,
+        description: variant?.desc || "",
+        image: image || undefined,
       });
     } else {
+      setPreviewUrl("");
       form.resetFields();
-      form.setFieldsValue({
-        isActive: true,
-      });
     }
-  }, [time]);
+  }, [time, isEdit, editProductData, form]);
 
-  const handleUploadChange = ({ fileList: newFileList }: any) => {
-    setFileList(newFileList);
+  useEffect(() => {
+    return () => {
+      if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const looksLikePhoto = (file: File) => {
+    if (file.type.startsWith("image/")) return true;
+    return /\.(heic|heif|jpe?g|png|webp|gif|bmp|avif|jfif)$/i.test(file.name);
   };
 
-  // ✅ تابع استخراج آیدی دسته‌ها + والدها
-  const getCategoryIdsWithParents = (
-    selectedIds: number[],
-    allCategories: any[]
-  ): number[] => {
-    const finalIds = new Set<number>();
+  const handlePhotoPicked = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!looksLikePhoto(file)) {
+      message.error("لطفا یک عکس از گالری یا دوربین انتخاب کنید");
+      return;
+    }
 
-    selectedIds.forEach((id) => {
-      const category = allCategories.find((cat: any) => cat.id === id);
-      if (category) {
-        finalIds.add(category.id);
-        if (Array.isArray(category.childCategories)) {
-          category.childCategories.forEach((rel: any) => {
-            if (rel.parentId) {
-              finalIds.add(rel.parentId);
-            }
-          });
-        }
-      }
+    setPreviewUrl((current) => {
+      if (current.startsWith("blob:")) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
     });
-
-    return Array.from(finalIds);
+    setPhotoFile(file);
+    form.setFieldsValue({ image: file.name });
+    form.validateFields(["image"]).catch(() => undefined);
   };
 
   const handleSubmit = async (values: any) => {
+    if (!photoFile && !savedImage) {
+      form.setFields([
+        { name: "image", errors: ["تصویر محصول را انتخاب کنید"] },
+      ]);
+      return;
+    }
+
     setLoading(true);
-
     try {
-      // ✅ جایگزینی categoryIds با والدها
-      const fullCategoryIds = getCategoryIdsWithParents(
-        values.categoryIds || [],
-        allCategories
-      );
-
-      const payload = {
-        ...values,
-        categoryIds: fullCategoryIds,
-      };
-
-      if (isEdit && editProductData) {
-        await editProductClient(payload, editProductData.id);
-        message.success("ویرایش با موفقیت انجام شد");
-        refetchProduct();
-      } else {
-        const response = await addProductClient(payload);
-        const res = await response.json();
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "افزودن محصول با خطا مواجه شد");
-        }
-
-        if (fileList.length > 0) {
-          const formData = new FormData();
-          const file = fileList[0].originFileObj;
-          formData.append("file", file);
-
-          try {
-            await uploadImage(res.id, "product", formData);
-          } catch (error) {
-            console.warn("آپلود تصویر با خطا مواجه شد:", error);
-            message.warning("افزودن انجام شد، اما آپلود تصویر موفق نبود");
-          }
-        }
-
-        message.success("محصول با موفقیت اضافه شد");
-        onSuccess(res.id, res.slug);
-        refetchProduct();
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("price", String(values.price));
+      if (isEdit || values.description) {
+        formData.append("description", values.description || "");
       }
+      if (photoFile) formData.append("file", photoFile);
+
+      const response =
+        isEdit && editProductData
+          ? await editProductClient(formData, editProductData.id)
+          : await addProductClient(formData);
+
+      const raw = await response.text();
+      if (!response.ok) {
+        let messageText = "عملیات با خطا مواجه شد";
+        try {
+          const parsed = JSON.parse(raw);
+          messageText = parsed.message || messageText;
+          if (Array.isArray(parsed.message)) messageText = parsed.message.join("، ");
+        } catch {
+          if (raw) messageText = raw;
+        }
+        throw new Error(messageText);
+      }
+
+      message.success(
+        isEdit ? "ویرایش با موفقیت انجام شد" : "محصول با موفقیت اضافه شد"
+      );
+      refetchProduct();
+      onSuccess();
     } catch (error: any) {
-      console.error("خطا در فرم محصول:", error);
-      console.log(error?.message || "عملیات با خطا مواجه شد");
+      message.error(error?.message || "عملیات با خطا مواجه شد");
     } finally {
       setLoading(false);
     }
@@ -129,55 +145,99 @@ const AddProductForm = ({
         form={form}
         id="addProductForm"
         name="add-product"
-        labelCol={{ span: 10 }}
-        wrapperCol={{ span: 10 }}
+        labelCol={{ span: 8 }}
+        wrapperCol={{ span: 14 }}
         onFinish={handleSubmit}
         autoComplete="off"
       >
         <Form.Item
+          label="تصویر محصول"
+          name="image"
+          required={!savedImage}
+          rules={[
+            {
+              validator: async (_, value) => {
+                if (value || savedImage || photoFile) return;
+                throw new Error("تصویر محصول را انتخاب کنید");
+              },
+            },
+          ]}
+        >
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*,.heic,.heif"
+              onChange={handlePhotoPicked}
+              style={{ display: "none" }}
+              aria-label="انتخاب تصویر از گالری"
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*,.heic,.heif"
+              capture="environment"
+              onChange={handlePhotoPicked}
+              style={{ display: "none" }}
+              aria-label="گرفتن عکس با دوربین"
+            />
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => galleryInputRef.current?.click()}
+            >
+              انتخاب از گالری
+            </Button>
+            <Button
+              icon={<CameraOutlined />}
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              گرفتن عکس
+            </Button>
+          </div>
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt="پیش‌نمایش محصول"
+              style={{
+                marginTop: 12,
+                width: 120,
+                height: 120,
+                objectFit: "cover",
+                borderRadius: 4,
+              }}
+            />
+          ) : null}
+        </Form.Item>
+
+        <Form.Item
           label="نام محصول"
-          name="slug"
-          rules={[{ required: true, message: "نام محصول را وارد کنید!" }]}
+          name="name"
+          rules={[{ required: true, message: "نام محصول را وارد کنید" }]}
         >
           <Input />
         </Form.Item>
 
-        {!isEdit && (
-          <Form.Item
-            label="دسته بندی ها"
-            name="categoryIds"
-            rules={[
-              { required: true, message: "حداقل یک دسته‌بندی را انتخاب کنید!" },
-            ]}
-          >
-            <Select
-              mode="multiple"
-              placeholder="انتخاب دسته‌بندی"
-              options={formattedCategories}
-              allowClear
-            />
-          </Form.Item>
-        )}
-
-        <Form.Item label="فعال" name="isActive" valuePropName="checked">
-          <Switch defaultChecked />
+        <Form.Item
+          label="قیمت"
+          name="price"
+          rules={[
+            { required: true, message: "قیمت را وارد کنید" },
+            {
+              validator: async (_, value) => {
+                if (value === undefined || value === null || value === "") return;
+                if (Number(value) < 0) throw new Error("قیمت نمی‌تواند منفی باشد");
+              },
+            },
+          ]}
+        >
+          <InputNumber min={0} style={{ width: "100%" }} />
         </Form.Item>
 
-        {!isEdit && (
-          <Form.Item label="تصویر محصول">
-            <Upload
-              listType="picture"
-              beforeUpload={() => false}
-              fileList={fileList}
-              onChange={handleUploadChange}
-              maxCount={1}
-            >
-              <Button icon={<UploadOutlined />}>انتخاب تصویر</Button>
-            </Upload>
-          </Form.Item>
-        )}
+        <Form.Item label="توضیحات (اختیاری)" name="description">
+          <Input.TextArea rows={3} placeholder="اختیاری" />
+        </Form.Item>
 
-        <Form.Item>
+        <Form.Item wrapperCol={{ span: 14, offset: 8 }}>
           <Button type="primary" htmlType="submit" loading={loading}>
             {isEdit ? "ویرایش محصول" : "ثبت محصول"}
           </Button>
