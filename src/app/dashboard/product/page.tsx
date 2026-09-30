@@ -8,7 +8,6 @@ import {
   getAllCategoriesClient,
 } from "@/components/utils/actionsClient";
 import ProductShowTable from "./components/show-table";
-import SimpleAdd from "./components/simple-add";
 
 export default function AdminProductPage() {
   const [allProducts, setAllProducts] = useState([]);
@@ -45,14 +44,6 @@ export default function AdminProductPage() {
 
   return (
     <>
-      <SimpleAdd
-        categories={allCategories}
-        onSaved={() => {
-          getAllProductClient().then((products) => {
-            setAllProducts(Array.isArray(products) ? products : []);
-          });
-        }}
-      />
       <ProductShowTable
         dataSource={allProducts}
         allCategories={allCategories}

@@ -148,7 +148,7 @@ export default function SimpleAdd({
       layout="vertical"
       onFinish={onFinish}
       autoComplete="off"
-      style={{ maxWidth: 560, marginBottom: 24 }}
+      style={{ maxWidth: 560 }}
     >
       <Form.Item label="تصویر">
         <div style={{ display: "flex", gap: 8 }}>
