@@ -418,34 +418,3 @@ export const checkoutBasketClient = async (_basketId) => {
     throw new Error("Failed to checkout basket", err);
   }
 };
-
-function vitrineErrorMessage(data, fallback) {
-  const message = data?.data?.data?.message || data?.message || fallback;
-  return Array.isArray(message) ? message[0] : message;
-}
-
-export const getVitrineToday = async () => {
-  const res = await fetch(`${BASE_URL}/product/vitrine/today`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error("ویترین دریافت نشد");
-  return res.json();
-};
-
-export const suggestVitrineProducts = async (q) => {
-  const res = await authFetch(
-    `${BASE_URL}/product/vitrine/suggest?q=${encodeURIComponent(q)}`
-  );
-  if (!res.ok) return [];
-  return res.json();
-};
-
-export const createVitrine = async (formData) => {
-  const res = await authFetch(`${BASE_URL}/product/vitrine`, {
-    method: "POST",
-    body: formData,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(vitrineErrorMessage(data, "ثبت انجام نشد"));
-  return data;
-};

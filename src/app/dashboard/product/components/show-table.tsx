@@ -2,7 +2,7 @@
 
 import { Button, message, Popconfirm, Table } from "antd";
 import type { TableProps } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getAllProductClient,
   softDeleteProductClient,
@@ -38,6 +38,10 @@ export default function ProductShowTable({
   isGodUser,
 }: ProductShowTableProps) {
   const [data, setData] = useState(Array.isArray(dataSource) ? dataSource : []);
+
+  useEffect(() => {
+    setData(Array.isArray(dataSource) ? dataSource : []);
+  }, [dataSource]);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editProductData, setEditProductData] = useState<any>(null);
