@@ -24,7 +24,7 @@ export default function AdminProductPage() {
     user?.phone?.trim() === process.env.NEXT_PUBLIC_GOD_ADMIN_NUMBER?.trim();
 
   const userPermission = useSelector(
-    (state: RootState) => state.user.userInfo?.roles[0]?.permissions || []
+    (state: RootState) => state.user.userInfo?.roles[0]?.permissions || [],
   );
 
   useEffect(() => {
