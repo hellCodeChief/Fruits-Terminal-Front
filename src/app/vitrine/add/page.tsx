@@ -1,19 +1,28 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { compressImage } from "../compress-image";
 import {
   createVitrine,
-  formatToman,
-  getCategories,
-  suggestProducts,
-  VitrineSuggestion,
-} from "@/components/utils/vitrineClient";
+  getAllCategoriesClient,
+  suggestVitrineProducts,
+} from "@/components/utils/actionsClient";
+import { CameraOutlined, PictureOutlined } from "@ant-design/icons";
+import {
+  AutoComplete,
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Typography,
+  Upload,
+  message,
+} from "antd";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
-const UNITS = ["جعبه", "کیسه", "کیلو"] as const;
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const MAX_EDGE = 1200;
 
 function staffAllowed(user: any) {
   if (user?.accountType === "admin") return true;
@@ -25,26 +34,44 @@ function staffAllowed(user: any) {
   return names.includes("admin") || names.includes("worker");
 }
 
+function formatToman(price: number) {
+  return `${new Intl.NumberFormat("fa-IR").format(price)} تومان`;
+}
+
+async function compressImage(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("این تصویر قابل استفاده نیست");
+  context.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", 0.7)
+  );
+  if (!blob) throw new Error("این تصویر قابل استفاده نیست");
+  return new File([blob], "photo.jpg", { type: "image/jpeg" });
+}
+
 export default function VitrineAddPage() {
   const router = useRouter();
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraBox = useRef<HTMLDivElement>(null);
+  const [form] = Form.useForm();
   const [ready, setReady] = useState(false);
   const [allowed, setAllowed] = useState(false);
-  const [token, setToken] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [unit, setUnit] = useState<(typeof UNITS)[number]>("جعبه");
-  const [description, setDescription] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [categories, setCategories] = useState<any[]>([]);
-  const [suggestions, setSuggestions] = useState<VitrineSuggestion[]>([]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState<{ label: string; value: number }[]>([]);
+  const [options, setOptions] = useState<
+    { value: string; label: string; price: number | null }[]
+  >([]);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [formError, setFormError] = useState("");
+  const name = Form.useWatch("name", form);
 
   useEffect(() => {
     const stored = localStorage.getItem("access_token") || "";
@@ -52,7 +79,6 @@ export default function VitrineAddPage() {
       router.replace("/account");
       return;
     }
-    setToken(stored);
     fetch(`${BASE_URL}/users/me`, {
       headers: { Authorization: `Bearer ${stored}` },
     })
@@ -67,290 +93,204 @@ export default function VitrineAddPage() {
       })
       .catch(() => router.replace("/account"));
 
-    getCategories().then(setCategories).catch(() => setCategories([]));
+    getAllCategoriesClient()
+      .then((rows: any[]) =>
+        setCategories(
+          (Array.isArray(rows) ? rows : []).map((row) => ({
+            label: row.displayName,
+            value: row.id,
+          }))
+        )
+      )
+      .catch(() => setCategories([]));
   }, [router]);
 
   useEffect(() => {
-    if (!token || name.trim().length < 1) {
-      setSuggestions([]);
+    const node = cameraBox.current;
+    if (!node) return;
+    const apply = () => {
+      node.querySelectorAll("input[type=file]").forEach((input) => {
+        input.setAttribute("capture", "environment");
+        input.setAttribute("accept", "image/*");
+      });
+    };
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(node, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [ready, allowed]);
+
+  useEffect(() => {
+    const query = String(name || "").trim();
+    if (!ready || query.length < 1) {
+      setOptions([]);
       return;
     }
     const handle = setTimeout(() => {
-      suggestProducts(name, token).then(setSuggestions).catch(() => setSuggestions([]));
+      suggestVitrineProducts(query)
+        .then((rows: any[]) =>
+          setOptions(
+            (Array.isArray(rows) ? rows : []).map((row) => ({
+              value: row.name,
+              price: row.price,
+              label: row.price
+                ? `${row.name} — ${formatToman(row.price)}`
+                : row.name,
+            }))
+          )
+        )
+        .catch(() => setOptions([]));
     }, 250);
     return () => clearTimeout(handle);
-  }, [name, token]);
+  }, [name, ready]);
 
-  const previewUrl = useMemo(() => preview, [preview]);
-
-  const onPick = async (list: FileList | null) => {
-    const file = list?.[0];
-    if (!file) return;
+  const onPick = async (file: File) => {
     try {
       const compressed = await compressImage(file);
       if (preview) URL.revokeObjectURL(preview);
       setPhoto(compressed);
       setPreview(URL.createObjectURL(compressed));
       setSaved(false);
-      setErrors((prev) => ({ ...prev, photo: "" }));
     } catch (error: any) {
-      setFormError(error?.message || "این تصویر قابل استفاده نیست");
+      message.error(error?.message || "این تصویر قابل استفاده نیست");
     }
+    return false;
   };
 
-  const clearForm = () => {
-    if (preview) URL.revokeObjectURL(preview);
-    setPhoto(null);
-    setPreview("");
-    setName("");
-    setPrice("");
-    setUnit("جعبه");
-    setDescription("");
-    setCategoryId("");
-    setSuggestions([]);
-    setErrors({});
-    setFormError("");
-    if (cameraRef.current) cameraRef.current.value = "";
-    if (galleryRef.current) galleryRef.current.value = "";
-  };
-
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    const nextErrors: Record<string, string> = {};
-    if (!photo) nextErrors.photo = "تصویر را انتخاب کنید";
-    if (!name.trim()) nextErrors.name = "نام را وارد کنید";
-    if (!price.trim() || !Number(String(price).replace(/[^\d۰-۹٠-٩]/g, ""))) {
-      nextErrors.price = "قیمت را وارد کنید";
+  const onFinish = async (values: any) => {
+    if (!photo) {
+      message.error("تصویر را انتخاب کنید");
+      return;
     }
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-
-    const form = new FormData();
-    form.append("name", name.trim());
-    form.append("price", price.trim());
-    form.append("unit", unit);
-    if (description.trim()) form.append("description", description.trim());
-    if (categoryId) form.append("categoryId", categoryId);
-    form.append("file", photo as File);
-
-    setSubmitting(true);
-    setFormError("");
+    setSaving(true);
     try {
-      await createVitrine(form, token);
-      clearForm();
+      const body = new FormData();
+      body.append("file", photo);
+      body.append("name", values.name);
+      body.append("price", String(values.price));
+      if (values.description) body.append("description", values.description);
+      if (values.categoryId) body.append("categoryId", String(values.categoryId));
+      await createVitrine(body);
       setSaved(true);
+      setPhoto(null);
+      if (preview) URL.revokeObjectURL(preview);
+      setPreview("");
+      form.resetFields();
+      message.success("ثبت شد");
     } catch (error: any) {
-      setFormError(error?.message || "ثبت انجام نشد");
+      message.error(error?.message || "ثبت انجام نشد");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
   if (!ready) {
     return (
-      <main className="min-h-screen bg-[#f7f4ef] text-[#1c1915] p-6">
-        <p className="text-center mt-16">در حال بارگذاری</p>
-      </main>
+      <Typography.Paragraph style={{ padding: 24, textAlign: "center" }}>
+        در حال بارگذاری
+      </Typography.Paragraph>
     );
   }
 
   if (!allowed) {
     return (
-      <main className="min-h-screen bg-[#f7f4ef] text-[#1c1915] p-6">
-        <p className="text-center mt-16">فقط مدیر یا کارگر می‌تواند در ویترین ثبت کند</p>
-        <p className="text-center mt-4">
-          <Link href="/vitrine" className="underline">
-            مشاهده ویترین
-          </Link>
-        </p>
-      </main>
+      <Typography.Paragraph style={{ padding: 24 }}>
+        فقط مدیر یا کارگر می‌تواند در ویترین ثبت کند
+      </Typography.Paragraph>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f4ef] text-[#1c1915]">
-      <div className="max-w-lg mx-auto px-4 py-6">
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <h1 className="text-2xl font-bold">افزودن به ویترین امروز</h1>
-          <Link href="/vitrine" className="text-sm underline">
-            ویترین
-          </Link>
-        </div>
+    <div style={{ padding: 16, maxWidth: 560 }}>
+      <Typography.Title level={3}>افزودن به ویترین امروز</Typography.Title>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        autoComplete="off"
+      >
+        <Form.Item label="تصویر">
+          <div style={{ display: "flex", gap: 8 }}>
+            <div ref={cameraBox}>
+              <Upload
+                accept="image/*"
+                maxCount={1}
+                showUploadList={false}
+                beforeUpload={onPick}
+              >
+                <Button icon={<CameraOutlined />}>دوربین</Button>
+              </Upload>
+            </div>
+            <Upload
+              accept="image/*"
+              maxCount={1}
+              showUploadList={false}
+              beforeUpload={onPick}
+            >
+              <Button icon={<PictureOutlined />}>گالری</Button>
+            </Upload>
+          </div>
+          {preview && (
+            <img
+              alt=""
+              src={preview}
+              style={{ marginTop: 12, width: "100%", maxHeight: 240, objectFit: "cover" }}
+            />
+          )}
+        </Form.Item>
 
-        {saved && (
-          <div className="mb-4 rounded-xl bg-[#e7f6ea] px-4 py-3">
-            <p className="font-bold">ثبت شد</p>
-            <Link href="/vitrine" className="underline text-sm">
-              مشاهده ویترین
+        <Form.Item
+          label="نام"
+          name="name"
+          rules={[{ required: true, message: "نام را وارد کنید" }]}
+        >
+          <AutoComplete
+            options={options}
+            onSelect={(_value, option: { price?: number | null }) => {
+              if (option.price) form.setFieldValue("price", option.price);
+            }}
+          >
+            <Input />
+          </AutoComplete>
+        </Form.Item>
+
+        <Form.Item
+          label="قیمت"
+          name="price"
+          rules={[{ required: true, message: "قیمت را وارد کنید" }]}
+        >
+          <InputNumber
+            min={1}
+            style={{ width: "100%" }}
+            addonAfter="تومان"
+          />
+        </Form.Item>
+
+        <Form.Item label="توضیح" name="description">
+          <Input.TextArea rows={3} maxLength={300} />
+        </Form.Item>
+
+        <Form.Item label="دسته‌بندی" name="categoryId">
+          <Select allowClear options={categories} />
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={saving}>
+            ثبت در ویترین
+          </Button>
+        </Form.Item>
+      </Form>
+
+      {saved && (
+        <div>
+          <Typography.Text>ثبت شد</Typography.Text>
+          <div style={{ marginTop: 8 }}>
+            <Link href="/vitrine">
+              <Button>ویترین امروز</Button>
             </Link>
           </div>
-        )}
-
-        <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(event) => onPick(event.target.files)}
-        />
-        <input
-          ref={galleryRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(event) => onPick(event.target.files)}
-        />
-
-        {!photo && (
-          <div className="grid grid-cols-1 gap-3">
-            <button
-              type="button"
-              onClick={() => cameraRef.current?.click()}
-              className="w-full rounded-2xl bg-black text-white py-5 text-lg font-bold"
-            >
-              دوربین
-            </button>
-            <button
-              type="button"
-              onClick={() => galleryRef.current?.click()}
-              className="w-full rounded-2xl border border-black py-5 text-lg font-bold"
-            >
-              گالری
-            </button>
-            {errors.photo && <p className="text-red-600 text-sm">{errors.photo}</p>}
-          </div>
-        )}
-
-        {photo && (
-          <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-            <div>
-              <img
-                src={previewUrl}
-                alt="پیش‌نمایش"
-                className="w-full aspect-[4/3] object-cover rounded-2xl bg-white"
-              />
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={() => cameraRef.current?.click()}
-                  className="rounded-xl border border-black py-2 text-sm font-bold"
-                >
-                  دوربین
-                </button>
-                <button
-                  type="button"
-                  onClick={() => galleryRef.current?.click()}
-                  className="rounded-xl border border-black py-2 text-sm font-bold"
-                >
-                  گالری
-                </button>
-              </div>
-            </div>
-
-            <label className="flex flex-col gap-1 relative">
-              <span className="text-sm">نام</span>
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="w-full rounded-xl border border-[#d9d1c7] bg-white px-3 py-4 text-2xl"
-                autoComplete="off"
-              />
-              {errors.name && <span className="text-red-600 text-sm">{errors.name}</span>}
-              {suggestions.length > 0 && (
-                <ul className="absolute top-full inset-x-0 z-10 mt-1 rounded-xl border border-[#d9d1c7] bg-white shadow">
-                  {suggestions.map((item) => (
-                    <li key={item.productId}>
-                      <button
-                        type="button"
-                        className="w-full text-right px-3 py-3 border-b border-[#f0ebe4] last:border-0"
-                        onClick={() => {
-                          setName(item.name);
-                          setSuggestions([]);
-                        }}
-                      >
-                        <span className="font-bold">{item.name}</span>
-                        {item.price != null && (
-                          <span className="block text-sm text-[#6b6258]">
-                            {formatToman(item.price)}
-                            {item.unit ? ` · ${item.unit}` : ""}
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-sm">قیمت (تومان)</span>
-              <input
-                value={price}
-                onChange={(event) => setPrice(event.target.value)}
-                inputMode="numeric"
-                className="w-full rounded-xl border border-[#d9d1c7] bg-white px-3 py-3 text-xl"
-              />
-              {errors.price && <span className="text-red-600 text-sm">{errors.price}</span>}
-            </label>
-
-            <div>
-              <p className="text-sm mb-2">واحد</p>
-              <div className="grid grid-cols-3 gap-2">
-                {UNITS.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setUnit(item)}
-                    className={`rounded-full py-2 font-bold ${
-                      unit === item ? "bg-black text-white" : "bg-white border border-[#d9d1c7]"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-sm">توضیحات (اختیاری)</span>
-              <input
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                className="w-full rounded-xl border border-[#d9d1c7] bg-white px-3 py-3"
-              />
-            </label>
-
-            {categories.length > 0 && (
-              <label className="flex flex-col gap-1">
-                <span className="text-sm">دسته‌بندی (اختیاری)</span>
-                <select
-                  value={categoryId}
-                  onChange={(event) => setCategoryId(event.target.value)}
-                  className="w-full rounded-xl border border-[#d9d1c7] bg-white px-3 py-3"
-                >
-                  <option value="">بدون دسته‌بندی</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.displayName || category.slug}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            {formError && <p className="text-red-600 text-sm">{formError}</p>}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full rounded-2xl bg-black text-white py-4 text-lg font-bold disabled:opacity-60"
-            >
-              {submitting ? "در حال ثبت" : "ثبت در ویترین"}
-            </button>
-          </form>
-        )}
-      </div>
-    </main>
+        </div>
+      )}
+    </div>
   );
 }
