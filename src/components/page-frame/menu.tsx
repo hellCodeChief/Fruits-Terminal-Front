@@ -94,6 +94,9 @@ export default function PageFrameMenu() {
           {/* dropdowns */}
           <div className="flex-[3] hidden lg:block">
             <div className="flex justify-center gap-6">
+              <Link href="/vitrine" className="fz1 font-bold">
+                ویترین
+              </Link>
               <Link href={`/products`}>
                 <DropDownShop />
               </Link>

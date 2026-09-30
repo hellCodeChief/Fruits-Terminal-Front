@@ -21,6 +21,12 @@ export default function SideContentMenu() {
 
   return (
     <div>
+      <Link
+        href="/vitrine"
+        className="h-[55px] flex items-center font-bold px-3 border-b border-light-textGray2"
+      >
+        ویترین امروز
+      </Link>
       {/* EACH tile of menu */}
       {menuItems.map((item, index) => (
         <div

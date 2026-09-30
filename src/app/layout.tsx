@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
-import PageFrame from "@/components/page-frame/pageFrame";
+import AppShell from "@/components/app-shell";
 import { ConfigProvider } from "antd";
 import "./styles/globals.css";
 import "slick-carousel/slick/slick.css";
@@ -16,7 +16,7 @@ const RootLayout = ({ children }: RootLayoutProps) => (
       {/* Wrap the layout with ConfigProvider to apply RTL direction */}
       <ConfigProvider direction="rtl">
         <AntdRegistry>
-          <PageFrame>{children}</PageFrame>
+          <AppShell>{children}</AppShell>
         </AntdRegistry>
       </ConfigProvider>
     </body>
