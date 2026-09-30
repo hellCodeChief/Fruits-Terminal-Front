@@ -23,7 +23,9 @@ export default function VitrinePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#f7f4ef] text-[#1c1915] pb-28">
+    <main
+      className={`min-h-screen bg-[#f7f4ef] text-[#1c1915] ${phone ? "pb-40" : ""}`}
+    >
       <header className="px-4 pt-6 pb-4 max-w-5xl mx-auto">
         <div className="flex items-start justify-between gap-3">
           <div>
