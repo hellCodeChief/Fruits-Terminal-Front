@@ -37,7 +37,7 @@ export default function ProductShowTable({
   userPermission,
   isGodUser,
 }: ProductShowTableProps) {
-  const [data, setData] = useState(dataSource);
+  const [data, setData] = useState(Array.isArray(dataSource) ? dataSource : []);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editProductData, setEditProductData] = useState<any>(null);
@@ -45,7 +45,7 @@ export default function ProductShowTable({
 
   const refetchProduct = async () => {
     const res = await getAllProductClient();
-    setData(res);
+    setData(Array.isArray(res) ? res : []);
   };
 
   const handleAddClick = () => {
@@ -67,7 +67,7 @@ export default function ProductShowTable({
       await softDeleteProductClient(_id);
       message.success("محصول با موفقیت حذف شد");
       const updated = await getAllProductClient();
-      setData(updated);
+      setData(Array.isArray(updated) ? updated : []);
     } catch (error) {
       console.error("خطا در حذف نرم:", error);
     }
@@ -78,7 +78,7 @@ export default function ProductShowTable({
       await hardDeleteProductClient(_id);
       message.success("محصول به صورت دائم حذف شد");
       const updated = await getAllProductClient();
-      setData(updated);
+      setData(Array.isArray(updated) ? updated : []);
     } catch (error) {
       console.error("خطا در حذف سخت:", error);
     }

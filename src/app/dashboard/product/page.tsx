@@ -32,7 +32,7 @@ export default function AdminProductPage() {
       const products = await getAllProductClient();
       const categories = await getAllCategoriesClient();
 
-      setAllProducts(products || []);
+      setAllProducts(Array.isArray(products) ? products : []);
       setAllCategories(categories || []);
       setLoading(false);
     }

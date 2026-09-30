@@ -93,14 +93,21 @@ export const hardDeleteCategoriesClient = async (_id) => {
 
 // ________________
 
+function productList(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+}
+
 export async function getAllProductClient() {
   try {
     const res = await authFetch(`${BASE_URL}/product`, {});
     const data = await res.json();
-
-    return data;
+    return productList(data);
   } catch (err) {
     console.log("handling error", err);
+    return [];
   }
 }
 
