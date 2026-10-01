@@ -125,24 +125,28 @@ export default function SimpleAdd({
 
   // ✅ دوربین زنده با راهنمای مربع؛ اگر بسته باشد گالری می‌ماند
   const openCamera = async () => {
+    // ✅ دوربین فقط روی localhost یا https
+    if (!window.isSecureContext || !navigator.mediaDevices) {
+      message.error("دوربین فقط روی localhost یا https باز می‌شود");
+      return;
+    }
     try {
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-          audio: false,
-        });
-      } catch {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false,
-        });
-      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
       stopCamera();
       streamRef.current = stream;
       setCameraOpen(true);
-    } catch {
-      message.error("دوربین باز نشد");
+    } catch (error) {
+      const name = error instanceof DOMException ? error.name : "";
+      if (name === "NotAllowedError") {
+        message.error("اجازه دوربین در مرورگر داده نشده");
+      } else if (name === "NotFoundError") {
+        message.error("دوربینی پیدا نشد");
+      } else {
+        message.error("دوربین باز نشد");
+      }
     }
   };
 
