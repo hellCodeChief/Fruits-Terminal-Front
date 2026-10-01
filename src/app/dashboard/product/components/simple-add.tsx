@@ -7,6 +7,7 @@ import {
 } from "@/components/utils/actionsClient";
 import { CameraOutlined, PictureOutlined } from "@ant-design/icons";
 import {
+  AutoComplete,
   Button,
   Form,
   Input,
@@ -58,11 +59,46 @@ function errorText(data: any, fallback: string) {
   return Array.isArray(messageText) ? messageText[0] : messageText;
 }
 
+type KnownProduct = {
+  id: number;
+  slug: string;
+  variants?: {
+    id?: number;
+    price?: number | string;
+    createdAt?: string;
+  }[];
+};
+
+// ✅ فاصله اضافه و ی/ک عربی با فارسی یکی حساب می‌شوند
+function normalizeName(value: string) {
+  return value
+    .replace(/[يى]/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function latestPrice(product: KnownProduct) {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  const latest = variants.reduce<(typeof variants)[number] | undefined>(
+    (best, item) => {
+      if (!best) return item;
+      const bestTime = Date.parse(best.createdAt || "") || best.id || 0;
+      const itemTime = Date.parse(item.createdAt || "") || item.id || 0;
+      return itemTime >= bestTime ? item : best;
+    },
+    undefined
+  );
+  return latest?.price;
+}
+
 export default function SimpleAdd({
   categories,
+  products,
   onSaved,
 }: {
   categories: { id: number; displayName: string }[];
+  products: KnownProduct[];
   onSaved: () => void;
 }) {
   const [form] = Form.useForm();
@@ -96,41 +132,59 @@ export default function SimpleAdd({
       message.error("تصویر را انتخاب کنید");
       return;
     }
+    const name = values.name.trim();
+    const existing = (Array.isArray(products) ? products : []).find(
+      (product) => normalizeName(product.slug || "") === normalizeName(name)
+    );
     setSaving(true);
     try {
-      const productRes = await addProductClient({
-        slug: values.name.trim(),
-        categoryIds: values.categoryId ? [values.categoryId] : [],
+      const variantPayload = {
+        name,
+        slug: `p${Date.now().toString(36)}`,
+        stock: 0,
+        desc: values.description?.trim() || "",
         isActive: true,
-      });
-      const product = await productRes.json().catch(() => ({}));
-      if (!productRes.ok || !product?.id) {
-        throw new Error(errorText(product, "ثبت انجام نشد"));
-      }
+        isDefault: true,
+        price: Number(values.price),
+        props: [],
+      };
 
-      const variantRes = await addProductVariantClient({
-        variants: [
-          {
-            name: values.name.trim(),
-            slug: `p${Date.now().toString(36)}`,
-            stock: 0,
-            desc: values.description?.trim() || "",
-            isActive: true,
-            isDefault: true,
-            price: Number(values.price),
-            productId: product.id,
-            props: [],
-          },
-        ],
-      });
-      if (!variantRes.ok) {
-        const variantBody = await variantRes.json().catch(() => ({}));
-        throw new Error(errorText(variantBody, "ثبت قیمت انجام نشد"));
-      }
+      // ✅ نام تکراری فقط تنوع جدید می‌سازد؛ تنوع‌های قبلی می‌مانند
+      if (existing) {
+        const variantRes = await addProductVariantClient({
+          variants: [{ ...variantPayload, productId: existing.id }],
+        });
+        const created = await variantRes.json().catch(() => null);
+        const variantId = Array.isArray(created) ? created[0]?.id : created?.id;
+        if (!variantRes.ok || !variantId) {
+          throw new Error(errorText(created, "ثبت قیمت انجام نشد"));
+        }
+        const body = new FormData();
+        body.append("file", photo);
+        await uploadImage(variantId, "product-variant", body);
+      } else {
+        const productRes = await addProductClient({
+          slug: name,
+          categoryIds: values.categoryId ? [values.categoryId] : [],
+          isActive: true,
+        });
+        const product = await productRes.json().catch(() => ({}));
+        if (!productRes.ok || !product?.id) {
+          throw new Error(errorText(product, "ثبت انجام نشد"));
+        }
 
-      const body = new FormData();
-      body.append("file", photo);
-      await uploadImage(product.id, "product", body);
+        const variantRes = await addProductVariantClient({
+          variants: [{ ...variantPayload, productId: product.id }],
+        });
+        if (!variantRes.ok) {
+          const variantBody = await variantRes.json().catch(() => ({}));
+          throw new Error(errorText(variantBody, "ثبت قیمت انجام نشد"));
+        }
+
+        const body = new FormData();
+        body.append("file", photo);
+        await uploadImage(product.id, "product", body);
+      }
 
       form.resetFields();
       if (preview) URL.revokeObjectURL(preview);
@@ -197,7 +251,37 @@ export default function SimpleAdd({
         name="name"
         rules={[{ required: true, message: "نام را وارد کنید" }]}
       >
-        <Input />
+        {/* ✅ پیشنهاد از اسلاگ محصولات؛ قیمت ریال همان عدد ذخیره‌شده */}
+        <AutoComplete
+          style={{ width: "100%" }}
+          options={(Array.isArray(products) ? products : [])
+            .filter((product) => product.slug)
+            .map((product) => {
+              const price = latestPrice(product);
+              const priceText =
+                price === undefined || price === null || price === ""
+                  ? ""
+                  : `${price} ریال`;
+              return {
+                value: product.slug,
+                label: (
+                  <span
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                    }}
+                  >
+                    <span>{product.slug}</span>
+                    <span>{priceText}</span>
+                  </span>
+                ),
+              };
+            })}
+          filterOption={(input, option) =>
+            normalizeName(String(option?.value ?? "")).includes(normalizeName(input))
+          }
+        />
       </Form.Item>
 
       <Form.Item

@@ -19,8 +19,13 @@ interface DataType {
   isActive: boolean;
   childCategories: any[];
   parentCategories: any[];
-  files?: any[];
-  variants?: { isDefault?: boolean; price?: number | string }[];
+  files?: { id: number }[];
+  variants?: {
+    id?: number;
+    price?: number | string;
+    createdAt?: string;
+    files?: { id: number }[];
+  }[];
 }
 
 // ✅ جدیدترین اول؛ ترتیب API از قدیم به جدید است
@@ -28,11 +33,19 @@ function newestFirst<T>(list: T[]) {
   return Array.isArray(list) ? [...list].reverse() : [];
 }
 
-// ✅ قیمت ریال همان فیلد variants.price است، بدون ضرب یا تقسیم
-function storedRial(record: DataType) {
+// ✅ تازه‌ترین تنوع با تاریخ؛ قیمت و عکس همان تنوع
+function latestVariant(record: DataType) {
   const variants = Array.isArray(record.variants) ? record.variants : [];
-  const variant = variants.find((item) => item.isDefault) || variants[0];
-  return variant?.price;
+  return variants.reduce<(typeof variants)[number] | undefined>((latest, item) => {
+    if (!latest) return item;
+    const latestTime = Date.parse(latest.createdAt || "") || latest.id || 0;
+    const itemTime = Date.parse(item.createdAt || "") || item.id || 0;
+    return itemTime >= latestTime ? item : latest;
+  }, undefined);
+}
+
+function storedRial(record: DataType) {
+  return latestVariant(record)?.price;
 }
 
 interface ProductShowTableProps {
@@ -117,13 +130,14 @@ export default function ProductShowTable({
     },
     {
       title: "تصویر",
-      dataIndex: "files",
       key: "image",
-      render: (files: any[]) => {
-        const file = files?.[0];
+      render: (_, record) => {
+        const variantFile = latestVariant(record)?.files?.[0];
+        const file = variantFile || record.files?.[0];
+        const usage = variantFile ? "product-variant" : "product";
         return file ? (
           <img
-            src={`${BASE_URL}/files/${file.id}/product`}
+            src={`${BASE_URL}/files/${file.id}/${usage}`}
             alt="product"
             style={{
               width: 60,
@@ -207,6 +221,7 @@ export default function ProductShowTable({
 
       <AddProductModal
         allProducts={dataSource}
+        products={data}
         allCategories={allCategories}
         refetchProduct={refetchProduct}
         userPermission={userPermission}

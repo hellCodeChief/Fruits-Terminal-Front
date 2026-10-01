@@ -6,6 +6,7 @@ import SimpleAdd from "../simple-add";
 
 const AddProductModalApp = ({
   allCategories,
+  products,
   refetchProduct,
   open,
   setOpen,
@@ -32,6 +33,7 @@ const AddProductModalApp = ({
       ) : (
         <SimpleAdd
           categories={allCategories}
+          products={products}
           onSaved={() => {
             refetchProduct();
             setOpen(false);
