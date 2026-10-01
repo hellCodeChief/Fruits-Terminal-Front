@@ -78,6 +78,19 @@ function normalizeName(value: string) {
     .trim();
 }
 
+// ✅ هر محصول یک ردیف؛ متن تایپ‌شده اگر همان محصول باشد گزینه اضافه نمی‌شود
+function suggestionProducts(products: KnownProduct[]) {
+  const seen = new Set<string>();
+  const unique: KnownProduct[] = [];
+  for (const product of Array.isArray(products) ? products : []) {
+    const name = normalizeName(product.slug || "");
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    unique.push(product);
+  }
+  return unique;
+}
+
 function latestPrice(product: KnownProduct) {
   const variants = Array.isArray(product.variants) ? product.variants : [];
   const latest = variants.reduce<(typeof variants)[number] | undefined>(
@@ -254,30 +267,29 @@ export default function SimpleAdd({
         {/* ✅ پیشنهاد از اسلاگ محصولات؛ قیمت ریال همان عدد ذخیره‌شده */}
         <AutoComplete
           style={{ width: "100%" }}
-          options={(Array.isArray(products) ? products : [])
-            .filter((product) => product.slug)
-            .map((product) => {
-              const price = latestPrice(product);
-              const priceText =
-                price === undefined || price === null || price === ""
-                  ? ""
-                  : `${price} ریال`;
-              return {
-                value: product.slug,
-                label: (
-                  <span
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                    }}
-                  >
-                    <span>{product.slug}</span>
-                    <span>{priceText}</span>
-                  </span>
-                ),
-              };
-            })}
+          options={suggestionProducts(products).map((product) => {
+            const price = latestPrice(product);
+            const priceText =
+              price === undefined || price === null || price === ""
+                ? ""
+                : `${price} ریال`;
+            return {
+              key: product.id,
+              value: product.slug,
+              label: (
+                <span
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}
+                >
+                  <span>{product.slug}</span>
+                  <span>{priceText}</span>
+                </span>
+              ),
+            };
+          })}
           filterOption={(input, option) =>
             normalizeName(String(option?.value ?? "")).includes(normalizeName(input))
           }
