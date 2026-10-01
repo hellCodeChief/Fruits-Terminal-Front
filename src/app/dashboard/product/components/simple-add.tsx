@@ -19,23 +19,38 @@ import { useEffect, useRef, useState } from "react";
 
 const MAX_EDGE = 1200;
 
-async function compressImage(file: File): Promise<File> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
+// ✅ برش وسط به مربع، بدون کشیدن، و خروجی وب‌پی
+async function squareWebp(
+  source: CanvasImageSource,
+  width: number,
+  height: number
+): Promise<File> {
+  const side = Math.min(width, height);
+  const sx = (width - side) / 2;
+  const sy = (height - side) / 2;
+  const canvasSide = side > MAX_EDGE ? MAX_EDGE : side;
   const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = canvasSide;
+  canvas.height = canvasSide;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("این تصویر قابل استفاده نیست");
-  context.drawImage(bitmap, 0, 0, width, height);
-  bitmap.close();
+  context.drawImage(source, sx, sy, side, side, 0, 0, canvasSide, canvasSide);
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", 0.7)
+    canvas.toBlob(resolve, "image/webp", 0.8)
   );
   if (!blob) throw new Error("این تصویر قابل استفاده نیست");
-  return new File([blob], "photo.jpg", { type: "image/jpeg" });
+  return new File([blob], "photo.webp", { type: "image/webp" });
+}
+
+async function compressImage(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file, {
+    imageOrientation: "from-image",
+  });
+  try {
+    return await squareWebp(bitmap, bitmap.width, bitmap.height);
+  } finally {
+    bitmap.close();
+  }
 }
 
 function errorText(data: any, fallback: string) {
@@ -50,33 +65,107 @@ export default function SimpleAdd({
   categories: { id: number; displayName: string }[];
   onSaved: () => void;
 }) {
-  const cameraBox = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [form] = Form.useForm();
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [saving, setSaving] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [guide, setGuide] = useState({ side: 0, x: 0, y: 0 });
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+    setGuide({ side: 0, x: 0, y: 0 });
+  };
+
+  useEffect(() => stopCamera, []);
 
   useEffect(() => {
-    const node = cameraBox.current;
-    if (!node) return;
-    const apply = () => {
-      node.querySelectorAll("input[type=file]").forEach((input) => {
-        input.setAttribute("capture", "environment");
-        input.setAttribute("accept", "image/*");
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!cameraOpen || !video || !stream) return;
+    video.srcObject = stream;
+    video.play().catch(() => {});
+  }, [cameraOpen]);
+
+  useEffect(() => {
+    if (!cameraOpen) return;
+    const video = videoRef.current;
+    if (!video) return;
+    // ✅ اندازه مربع راهنما برابر ضلع کوتاه تصویر زنده
+    const measure = () => {
+      const width = video.offsetWidth;
+      const height = video.offsetHeight;
+      const side = Math.min(width, height);
+      setGuide({
+        side,
+        x: (width - side) / 2,
+        y: (height - side) / 2,
       });
     };
-    apply();
-    const observer = new MutationObserver(apply);
-    observer.observe(node, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, []);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(video);
+    video.addEventListener("loadeddata", measure);
+    return () => {
+      observer.disconnect();
+      video.removeEventListener("loadeddata", measure);
+    };
+  }, [cameraOpen]);
+
+  const showPhoto = (file: File) => {
+    if (preview) URL.revokeObjectURL(preview);
+    setPhoto(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  // ✅ دوربین زنده با راهنمای مربع؛ اگر بسته باشد گالری می‌ماند
+  const openCamera = async () => {
+    try {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
+      stopCamera();
+      streamRef.current = stream;
+      setCameraOpen(true);
+    } catch {
+      message.error("دوربین باز نشد");
+    }
+  };
+
+  const captureFrame = async () => {
+    const video = videoRef.current;
+    if (!video?.videoWidth) {
+      message.error("تصویر دوربین آماده نیست");
+      return;
+    }
+    try {
+      const file = await squareWebp(video, video.videoWidth, video.videoHeight);
+      showPhoto(file);
+      stopCamera();
+    } catch (error: any) {
+      message.error(error?.message || "این تصویر قابل استفاده نیست");
+    }
+  };
 
   const onPick = async (file: File) => {
     try {
       const compressed = await compressImage(file);
-      if (preview) URL.revokeObjectURL(preview);
-      setPhoto(compressed);
-      setPreview(URL.createObjectURL(compressed));
+      showPhoto(compressed);
+      stopCamera();
     } catch (error: any) {
       message.error(error?.message || "این تصویر قابل استفاده نیست");
     }
@@ -152,16 +241,9 @@ export default function SimpleAdd({
     >
       <Form.Item label="تصویر">
         <div style={{ display: "flex", gap: 8 }}>
-          <div ref={cameraBox}>
-            <Upload
-              accept="image/*"
-              maxCount={1}
-              showUploadList={false}
-              beforeUpload={onPick}
-            >
-              <Button icon={<CameraOutlined />}>دوربین</Button>
-            </Upload>
-          </div>
+          <Button icon={<CameraOutlined />} onClick={openCamera}>
+            دوربین
+          </Button>
           <Upload
             accept="image/*"
             maxCount={1}
@@ -171,12 +253,52 @@ export default function SimpleAdd({
             <Button icon={<PictureOutlined />}>گالری</Button>
           </Upload>
         </div>
+        {cameraOpen && (
+          <div style={{ marginTop: 12 }}>
+            <div ref={frameRef} style={{ position: "relative" }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: "100%", display: "block" }}
+              />
+              {guide.side > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: guide.x,
+                    top: guide.y,
+                    width: guide.side,
+                    height: guide.side,
+                    boxSizing: "border-box",
+                    border: "3px solid #fff",
+                    boxShadow: "0 0 0 999px rgba(0,0,0,0.55)",
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
+            </div>
+            <Button type="primary" onClick={captureFrame} style={{ marginTop: 8 }}>
+              گرفتن عکس
+            </Button>
+          </div>
+        )}
         {preview && (
-          <img
-            alt=""
-            src={preview}
-            style={{ marginTop: 12, width: "100%", maxHeight: 240, objectFit: "cover" }}
-          />
+          <div
+            style={{
+              marginTop: 12,
+              width: "100%",
+              maxWidth: 240,
+              aspectRatio: "1 / 1",
+            }}
+          >
+            <img
+              alt=""
+              src={preview}
+              style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+            />
+          </div>
         )}
       </Form.Item>
 
