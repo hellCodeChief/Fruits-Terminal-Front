@@ -205,7 +205,8 @@ export default function SimpleAdd({
         name="price"
         rules={[{ required: true, message: "قیمت را وارد کنید" }]}
       >
-        <InputNumber min={1} style={{ width: "100%" }} addonAfter="تومان" />
+        {/* ✅ قیمت به ریال؛ همان عددی که وارد می‌شود ذخیره و نشان داده می‌شود */}
+        <InputNumber min={1} style={{ width: "100%" }} addonAfter="ریال" />
       </Form.Item>
 
       <Form.Item label="توضیح" name="description">

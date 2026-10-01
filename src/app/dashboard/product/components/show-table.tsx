@@ -20,6 +20,19 @@ interface DataType {
   childCategories: any[];
   parentCategories: any[];
   files?: any[];
+  variants?: { isDefault?: boolean; price?: number | string }[];
+}
+
+// ✅ جدیدترین اول؛ ترتیب API از قدیم به جدید است
+function newestFirst<T>(list: T[]) {
+  return Array.isArray(list) ? [...list].reverse() : [];
+}
+
+// ✅ قیمت ریال همان فیلد variants.price است، بدون ضرب یا تقسیم
+function storedRial(record: DataType) {
+  const variants = Array.isArray(record.variants) ? record.variants : [];
+  const variant = variants.find((item) => item.isDefault) || variants[0];
+  return variant?.price;
 }
 
 interface ProductShowTableProps {
@@ -37,10 +50,10 @@ export default function ProductShowTable({
   userPermission,
   isGodUser,
 }: ProductShowTableProps) {
-  const [data, setData] = useState(Array.isArray(dataSource) ? dataSource : []);
+  const [data, setData] = useState(newestFirst(dataSource));
 
   useEffect(() => {
-    setData(Array.isArray(dataSource) ? dataSource : []);
+    setData(newestFirst(dataSource));
   }, [dataSource]);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -49,7 +62,7 @@ export default function ProductShowTable({
 
   const refetchProduct = async () => {
     const res = await getAllProductClient();
-    setData(Array.isArray(res) ? res : []);
+    setData(newestFirst(res));
   };
 
   const handleAddClick = () => {
@@ -71,7 +84,7 @@ export default function ProductShowTable({
       await softDeleteProductClient(_id);
       message.success("محصول با موفقیت حذف شد");
       const updated = await getAllProductClient();
-      setData(Array.isArray(updated) ? updated : []);
+      setData(newestFirst(updated));
     } catch (error) {
       console.error("خطا در حذف نرم:", error);
     }
@@ -82,7 +95,7 @@ export default function ProductShowTable({
       await hardDeleteProductClient(_id);
       message.success("محصول به صورت دائم حذف شد");
       const updated = await getAllProductClient();
-      setData(Array.isArray(updated) ? updated : []);
+      setData(newestFirst(updated));
     } catch (error) {
       console.error("خطا در حذف سخت:", error);
     }
@@ -128,6 +141,15 @@ export default function ProductShowTable({
       title: "Slug",
       dataIndex: "slug",
       key: "slug",
+    },
+    {
+      title: "قیمت",
+      key: "price",
+      render: (_, record) => {
+        const amount = storedRial(record);
+        if (amount === undefined || amount === null || amount === "") return "—";
+        return `${amount} ریال`;
+      },
     },
     {
       title: "وضعیت",
