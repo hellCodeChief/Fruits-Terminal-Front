@@ -15,7 +15,7 @@ import {
   Upload,
   message,
 } from "antd";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 const MAX_EDGE = 1200;
 
@@ -65,57 +65,10 @@ export default function SimpleAdd({
   categories: { id: number; displayName: string }[];
   onSaved: () => void;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const [form] = Form.useForm();
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [saving, setSaving] = useState(false);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [guide, setGuide] = useState({ side: 0, x: 0, y: 0 });
-
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setCameraOpen(false);
-    setGuide({ side: 0, x: 0, y: 0 });
-  };
-
-  useEffect(() => stopCamera, []);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    const stream = streamRef.current;
-    if (!cameraOpen || !video || !stream) return;
-    video.srcObject = stream;
-    video.play().catch(() => {});
-  }, [cameraOpen]);
-
-  useEffect(() => {
-    if (!cameraOpen) return;
-    const video = videoRef.current;
-    if (!video) return;
-    // ✅ اندازه مربع راهنما برابر ضلع کوتاه تصویر زنده
-    const measure = () => {
-      const width = video.offsetWidth;
-      const height = video.offsetHeight;
-      const side = Math.min(width, height);
-      setGuide({
-        side,
-        x: (width - side) / 2,
-        y: (height - side) / 2,
-      });
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(video);
-    video.addEventListener("loadeddata", measure);
-    return () => {
-      observer.disconnect();
-      video.removeEventListener("loadeddata", measure);
-    };
-  }, [cameraOpen]);
 
   const showPhoto = (file: File) => {
     if (preview) URL.revokeObjectURL(preview);
@@ -123,53 +76,10 @@ export default function SimpleAdd({
     setPreview(URL.createObjectURL(file));
   };
 
-  // ✅ دوربین زنده با راهنمای مربع؛ اگر بسته باشد گالری می‌ماند
-  const openCamera = async () => {
-    // ✅ دوربین فقط روی localhost یا https
-    if (!window.isSecureContext || !navigator.mediaDevices) {
-      message.error("دوربین فقط روی localhost یا https باز می‌شود");
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
-      stopCamera();
-      streamRef.current = stream;
-      setCameraOpen(true);
-    } catch (error) {
-      const name = error instanceof DOMException ? error.name : "";
-      if (name === "NotAllowedError") {
-        message.error("اجازه دوربین در مرورگر داده نشده");
-      } else if (name === "NotFoundError") {
-        message.error("دوربینی پیدا نشد");
-      } else {
-        message.error("دوربین باز نشد");
-      }
-    }
-  };
-
-  const captureFrame = async () => {
-    const video = videoRef.current;
-    if (!video?.videoWidth) {
-      message.error("تصویر دوربین آماده نیست");
-      return;
-    }
-    try {
-      const file = await squareWebp(video, video.videoWidth, video.videoHeight);
-      showPhoto(file);
-      stopCamera();
-    } catch (error: any) {
-      message.error(error?.message || "این تصویر قابل استفاده نیست");
-    }
-  };
-
   const onPick = async (file: File) => {
     try {
       const compressed = await compressImage(file);
       showPhoto(compressed);
-      stopCamera();
     } catch (error: any) {
       message.error(error?.message || "این تصویر قابل استفاده نیست");
     }
@@ -245,9 +155,16 @@ export default function SimpleAdd({
     >
       <Form.Item label="تصویر">
         <div style={{ display: "flex", gap: 8 }}>
-          <Button icon={<CameraOutlined />} onClick={openCamera}>
-            دوربین
-          </Button>
+          {/* ✅ دوربین گوشی با capture؛ روی http هم اپ دوربین باز می‌شود */}
+          <Upload
+            accept="image/*"
+            capture="environment"
+            maxCount={1}
+            showUploadList={false}
+            beforeUpload={onPick}
+          >
+            <Button icon={<CameraOutlined />}>دوربین</Button>
+          </Upload>
           <Upload
             accept="image/*"
             maxCount={1}
@@ -257,37 +174,6 @@ export default function SimpleAdd({
             <Button icon={<PictureOutlined />}>گالری</Button>
           </Upload>
         </div>
-        {cameraOpen && (
-          <div style={{ marginTop: 12 }}>
-            <div ref={frameRef} style={{ position: "relative" }}>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{ width: "100%", display: "block" }}
-              />
-              {guide.side > 0 && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: guide.x,
-                    top: guide.y,
-                    width: guide.side,
-                    height: guide.side,
-                    boxSizing: "border-box",
-                    border: "3px solid #fff",
-                    boxShadow: "0 0 0 999px rgba(0,0,0,0.55)",
-                    pointerEvents: "none",
-                  }}
-                />
-              )}
-            </div>
-            <Button type="primary" onClick={captureFrame} style={{ marginTop: 8 }}>
-              گرفتن عکس
-            </Button>
-          </div>
-        )}
         {preview && (
           <div
             style={{
