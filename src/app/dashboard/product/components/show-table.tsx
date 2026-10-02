@@ -230,12 +230,13 @@ export default function ProductShowTable({
 
   return (
     <>
-      {/* ✅ گوشی: افزودن گوشه پایین راست می‌ماند؛ دسکتاپ سر جایش بالای جدول */}
-      <div className="fixed bottom-4 right-4 z-40 md:static">
+      {/* ✅ گوشی: افزودن با فاصله از لبه پایین و راست؛ روی دکمه‌های کارت نمی‌افتد */}
+      <div className="fixed bottom-6 right-6 z-40 rounded bg-light-myWhite p-1 md:static md:bg-transparent md:p-0">
         <Button
           type="primary"
           onClick={handleAddClick}
           disabled={!hasPermission("product:create")}
+          className="whitespace-nowrap"
         >
           افزودن محصول
         </Button>
@@ -254,7 +255,7 @@ export default function ProductShowTable({
         time={time}
       />
       {/* ✅ گوشی: عکس تمام‌عرض بالا، متن و دکمه‌ها زیرش؛ کارت کوتاه است تا بعدی دیده شود */}
-      <div className="mt-4 flex flex-col gap-3 pb-16 md:hidden">
+      <div className="mt-4 flex flex-col gap-3 pb-24 md:hidden">
         {data.map((record) => {
           const src = productImage(record);
           return (
