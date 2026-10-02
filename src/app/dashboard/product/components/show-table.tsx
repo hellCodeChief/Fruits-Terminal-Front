@@ -272,7 +272,7 @@ export default function ProductShowTable({
   return (
     <>
       {/* ✅ گوشی: افزودن با فاصله از لبه پایین و راست؛ روی دکمه‌های کارت نمی‌افتد */}
-      <div className="fixed bottom-6 right-6 z-40 max-w-[calc(100vw-3rem)] rounded bg-light-myWhite p-1 md:static md:max-w-none md:bg-transparent md:p-0">
+      <div className="fixed bottom-6 right-6 z-40 max-w-[calc(100%-3rem)] rounded bg-light-myWhite p-1 md:static md:max-w-none md:bg-transparent md:p-0">
         <Button
           type="primary"
           onClick={handleAddClick}

@@ -17,7 +17,7 @@ const AddProductModalApp = ({
       title={isEdit ? "ویرایش محصول" : "افزودن محصول"}
       open={open}
       centered
-      width="calc(100vw - 2rem)"
+      width="calc(100% - 2rem)"
       style={{ maxWidth: 520 }}
       styles={{
         body: { maxHeight: "calc(100dvh - 9rem)", overflowY: "auto" },
