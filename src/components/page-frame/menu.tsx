@@ -65,7 +65,8 @@ export default function PageFrameMenu() {
   return (
     <>
       <header className="sticky z-50 top-0 bg-light-myWhite w-full">
-        <div className="c_container m-auto w-full h-[90px] flex justify-between items-center">
+        {/* ✅ فقط ارتفاع کمتر؛ چیدمان هدر همان است */}
+        <div className="c_container m-auto w-full h-[56px] flex justify-between items-center">
           {/* menu btn */}
           <button
             className="block lg:hidden flex-1 md:flex-[3]"
@@ -81,7 +82,7 @@ export default function PageFrameMenu() {
             href={`/`}
             className="h-full flex justify-start items-center flex-[2] lg:flex-[3] flex justify-center lg:justify-start"
           >
-            <div className="relative w-[150px] h-[75px]">
+            <div className="relative w-[150px] h-[48px]">
               <Image
                 fill
                 className="object-contain"

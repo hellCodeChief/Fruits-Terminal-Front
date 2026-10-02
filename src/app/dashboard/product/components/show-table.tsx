@@ -1,8 +1,8 @@
 "use client";
 
-import { Button, Card, message, Popconfirm, Table } from "antd";
+import { Button, Card, message, Modal, Popconfirm, Table } from "antd";
 import type { TableProps } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getAllProductClient,
   softDeleteProductClient,
@@ -57,6 +57,37 @@ function priceText(record: DataType) {
 
 function descriptionText(record: DataType) {
   return latestVariant(record)?.desc || record.desc || "";
+}
+
+// ✅ توضیح اگر از یک ردیف بلندتر باشد، بقیه در مودال
+function DescriptionRow({ text }: { text: string }) {
+  const lineRef = useRef<HTMLSpanElement>(null);
+  const [open, setOpen] = useState(false);
+  const [overflow, setOverflow] = useState(false);
+
+  useEffect(() => {
+    const line = lineRef.current;
+    if (!line) return;
+    setOverflow(line.scrollWidth > line.clientWidth + 1);
+  }, [text]);
+
+  return (
+    <>
+      <div className="mt-1 flex min-w-0 items-center gap-2">
+        <span ref={lineRef} className="min-w-0 flex-1 truncate">
+          توضیحات: {text}
+        </span>
+        {overflow && (
+          <button type="button" className="shrink-0" onClick={() => setOpen(true)}>
+            بیشتر…
+          </button>
+        )}
+      </div>
+      <Modal open={open} title="توضیحات" footer={null} onCancel={() => setOpen(false)}>
+        {text}
+      </Modal>
+    </>
+  );
 }
 
 // ✅ جدیدترین فایل؛ عکس تازه‌آپلودشده جای عکس قبلی را می‌گیرد
@@ -261,25 +292,28 @@ export default function ProductShowTable({
           return (
             <Card key={record.id} size="small" styles={{ body: { padding: 0 } }}>
               {src ? (
-                <img src={src} alt="" className="block h-32 w-full object-cover" />
+                <img src={src} alt="" className="block aspect-square w-full object-cover" />
               ) : (
-                <div className="flex h-32 w-full items-center justify-center bg-light-myGray text-xs">
+                <div className="flex aspect-square w-full items-center justify-center bg-light-myGray text-xs">
                   بدون تصویر
                 </div>
               )}
+              {/* ✅ دو ستون تا کارت کوتاه‌تر بماند؛ قیمت درشت است */}
               <div className="p-3">
-                <div>ID: {record.id}</div>
-                <div>توضیحات: {descriptionText(record)}</div>
-                <div className="break-words">Slug: {record.slug}</div>
-                <div>قیمت: {priceText(record)}</div>
-                <div>
-                  وضعیت:{" "}
-                  {record.isActive ? (
-                    <span style={{ color: "green" }}>🟢 فعال</span>
-                  ) : (
-                    <span style={{ color: "red" }}>🔴 غیرفعال</span>
-                  )}
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                  <div>ID: {record.id}</div>
+                  <div className="font-bold">قیمت: {priceText(record)}</div>
+                  <div className="min-w-0 truncate">Slug: {record.slug}</div>
+                  <div>
+                    وضعیت:{" "}
+                    {record.isActive ? (
+                      <span style={{ color: "green" }}>🟢 فعال</span>
+                    ) : (
+                      <span style={{ color: "red" }}>🔴 غیرفعال</span>
+                    )}
+                  </div>
                 </div>
+                <DescriptionRow text={descriptionText(record)} />
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button onClick={() => handleEditClick(record)}>ویرایش</Button>
                 <Popconfirm
