@@ -314,7 +314,7 @@ export default function SimpleAdd({
       layout="vertical"
       onFinish={onFinish}
       autoComplete="off"
-      style={{ maxWidth: 560 }}
+      style={{ maxWidth: "100%" }}
       initialValues={
         editing
           ? {

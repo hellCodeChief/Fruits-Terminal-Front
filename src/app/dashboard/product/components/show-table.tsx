@@ -17,6 +17,7 @@ interface DataType {
   slug: string;
   displayName: string;
   isActive: boolean;
+  createdAt?: string;
   childCategories: any[];
   parentCategories: any[];
   files?: { id: number }[];
@@ -29,9 +30,18 @@ interface DataType {
   }[];
 }
 
-// ✅ جدیدترین اول؛ ترتیب API از قدیم به جدید است
-function newestFirst<T>(list: T[]) {
-  return Array.isArray(list) ? [...list].reverse() : [];
+// ✅ ترتیب با تاریخ تازه‌ترین تنوع؛ نه آیدی و نه تاریخ خود محصول
+function variantSortTime(record: DataType) {
+  const createdAt = latestVariant(record)?.createdAt;
+  const variantTime = Date.parse(createdAt || "");
+  if (createdAt && !Number.isNaN(variantTime)) return variantTime;
+  return 0;
+}
+
+function newestFirst(list: DataType[]) {
+  return [...(Array.isArray(list) ? list : [])].sort(
+    (a, b) => variantSortTime(b) - variantSortTime(a)
+  );
 }
 
 // ✅ تازه‌ترین تنوع با تاریخ؛ قیمت و عکس همان تنوع
@@ -262,7 +272,7 @@ export default function ProductShowTable({
   return (
     <>
       {/* ✅ گوشی: افزودن با فاصله از لبه پایین و راست؛ روی دکمه‌های کارت نمی‌افتد */}
-      <div className="fixed bottom-6 right-6 z-40 rounded bg-light-myWhite p-1 md:static md:bg-transparent md:p-0">
+      <div className="fixed bottom-6 right-6 z-40 max-w-[calc(100vw-3rem)] rounded bg-light-myWhite p-1 md:static md:max-w-none md:bg-transparent md:p-0">
         <Button
           type="primary"
           onClick={handleAddClick}
@@ -286,25 +296,35 @@ export default function ProductShowTable({
         time={time}
       />
       {/* ✅ گوشی: عکس تمام‌عرض بالا، متن و دکمه‌ها زیرش؛ کارت کوتاه است تا بعدی دیده شود */}
-      <div className="mt-4 flex flex-col gap-3 pb-24 md:hidden">
+      {/* ✅ عرض کارت از صفحه بیرون نزند تا اسکرول افقی نماند */}
+      <div className="mt-4 flex w-full min-w-0 max-w-full flex-col gap-3 overflow-x-hidden pb-24 md:hidden">
         {data.map((record) => {
           const src = productImage(record);
           return (
-            <Card key={record.id} size="small" styles={{ body: { padding: 0 } }}>
+            <Card
+              key={record.id}
+              size="small"
+              className="w-full min-w-0 max-w-full overflow-hidden"
+              styles={{ body: { padding: 0 } }}
+            >
               {src ? (
-                <img src={src} alt="" className="block aspect-square w-full object-cover" />
+                <img
+                  src={src}
+                  alt=""
+                  className="block aspect-square w-full min-w-0 max-w-full object-cover"
+                />
               ) : (
-                <div className="flex aspect-square w-full items-center justify-center bg-light-myGray text-xs">
+                <div className="flex aspect-square w-full min-w-0 max-w-full items-center justify-center bg-light-myGray text-xs">
                   بدون تصویر
                 </div>
               )}
               {/* ✅ دو ستون تا کارت کوتاه‌تر بماند؛ قیمت درشت است */}
-              <div className="p-3">
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                  <div>ID: {record.id}</div>
-                  <div className="font-bold">قیمت: {priceText(record)}</div>
+              <div className="min-w-0 p-3">
+                <div className="grid min-w-0 grid-cols-2 gap-x-3 gap-y-1">
+                  <div className="min-w-0 break-words">ID: {record.id}</div>
+                  <div className="min-w-0 break-words font-bold">قیمت: {priceText(record)}</div>
                   <div className="min-w-0 truncate">Slug: {record.slug}</div>
-                  <div>
+                  <div className="min-w-0 break-words">
                     وضعیت:{" "}
                     {record.isActive ? (
                       <span style={{ color: "green" }}>🟢 فعال</span>
@@ -314,7 +334,7 @@ export default function ProductShowTable({
                   </div>
                 </div>
                 <DescriptionRow text={descriptionText(record)} />
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 flex min-w-0 flex-wrap gap-2">
                 <Button onClick={() => handleEditClick(record)}>ویرایش</Button>
                 <Popconfirm
                   title="آیا از حذف مطمئن هستید؟"

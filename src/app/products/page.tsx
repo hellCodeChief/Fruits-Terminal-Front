@@ -18,11 +18,15 @@ function latestVariant(product: any) {
   }, null);
 }
 
+// ✅ همان ترتیب داشبورد: تاریخ تازه‌ترین تنوع، نه آیدی یا تاریخ محصول
 function productTime(product: any) {
-  return Date.parse(product?.createdAt || "") || product?.id || 0;
+  const createdAt = latestVariant(product)?.createdAt;
+  const variantTime = Date.parse(createdAt || "");
+  if (createdAt && !Number.isNaN(variantTime)) return variantTime;
+  return 0;
 }
 
-// ✅ جدیدترین محصول اول؛ قیمت مرتب‌سازی همان ریال ذخیره‌شده است
+// ✅ جدیدترین تنوع اول؛ قیمت مرتب‌سازی همان ریال ذخیره‌شده است
 function listedProducts(
   products: any[],
   params: { get(name: string): string | null } | null
