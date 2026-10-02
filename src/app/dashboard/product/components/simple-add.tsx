@@ -189,14 +189,14 @@ export default function SimpleAdd({
         props: [],
       };
 
-      // ✅ ویرایش همان محصول است: نام، قیمت ریال، توضیح، دسته، فعال، و عکس در صورت انتخاب
+      // ✅ ویرایش همان محصول است: نام، قیمت ریال، توضیح، فعال، و عکس در صورت انتخاب
       if (editing) {
         const active = values.isActive !== false;
+        // ✅ بدنه ویرایش categoriesId و categoryIds ندارد؛ وایت‌لیست هر دو را رد می‌کند
         const productRes = await editProductClient(
           {
             slug: name,
             isActive: active,
-            categoryIds: values.categoryId ? [values.categoryId] : [],
           },
           editing.id
         );
@@ -326,7 +326,6 @@ export default function SimpleAdd({
                   ? undefined
                   : Number(currentPrice),
               description: current?.desc || "",
-              categoryId: editing.categories?.[0]?.id,
               isActive: editing.isActive !== false,
             }
           : undefined
@@ -421,15 +420,17 @@ export default function SimpleAdd({
         <Input.TextArea rows={3} />
       </Form.Item>
 
-      <Form.Item label="دسته‌بندی" name="categoryId">
-        <Select
-          allowClear
-          options={(Array.isArray(categories) ? categories : []).map((category) => ({
-            label: category.displayName,
-            value: category.id,
-          }))}
-        />
-      </Form.Item>
+      {!editing && (
+        <Form.Item label="دسته‌بندی" name="categoryId">
+          <Select
+            allowClear
+            options={(Array.isArray(categories) ? categories : []).map((category) => ({
+              label: category.displayName,
+              value: category.id,
+            }))}
+          />
+        </Form.Item>
+      )}
 
       {editing && (
         <Form.Item label="فعال" name="isActive" valuePropName="checked">
