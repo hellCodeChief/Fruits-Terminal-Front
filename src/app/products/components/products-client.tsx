@@ -41,7 +41,7 @@ export default function ProductsClient({ categories, products }: Props) {
         {/* Products */}
         <div className="flex-1 flex flex-wrap justify-between gap-4">
           {products.map((p) => (
-            <ProductCard key={p.id} item={p} />
+            <ProductCard key={p.id} item={p} preferLatest />
           ))}
         </div>
       </main>
