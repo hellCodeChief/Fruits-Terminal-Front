@@ -24,6 +24,7 @@ interface DataType {
     id?: number;
     price?: number | string;
     createdAt?: string;
+    desc?: string;
     files?: { id: number }[];
   }[];
 }
@@ -54,9 +55,19 @@ function priceText(record: DataType) {
   return `${amount} ریال`;
 }
 
+function descriptionText(record: DataType) {
+  return latestVariant(record)?.desc || record.desc || "";
+}
+
+// ✅ جدیدترین فایل؛ عکس تازه‌آپلودشده جای عکس قبلی را می‌گیرد
+function newestFile(files?: { id: number }[]) {
+  if (!files?.length) return null;
+  return files.reduce((best, file) => (file.id > best.id ? file : best));
+}
+
 function productImage(record: DataType) {
-  const variantFile = latestVariant(record)?.files?.[0];
-  const file = variantFile || record.files?.[0];
+  const variantFile = newestFile(latestVariant(record)?.files);
+  const file = variantFile || newestFile(record.files);
   if (!file) return null;
   const usage = variantFile ? "product-variant" : "product";
   return `${BASE_URL}/files/${file.id}/${usage}`;
@@ -139,8 +150,8 @@ export default function ProductShowTable({
     },
     {
       title: "توضیحات",
-      dataIndex: "desc",
       key: "desc",
+      render: (_, record) => descriptionText(record),
     },
     {
       title: "تصویر",
@@ -219,13 +230,16 @@ export default function ProductShowTable({
 
   return (
     <>
-      <Button
-        type="primary"
-        onClick={handleAddClick}
-        disabled={!hasPermission("product:create")}
-      >
-        افزودن محصول
-      </Button>
+      {/* ✅ گوشی: افزودن گوشه پایین راست می‌ماند؛ دسکتاپ سر جایش بالای جدول */}
+      <div className="fixed bottom-4 right-4 z-40 md:static">
+        <Button
+          type="primary"
+          onClick={handleAddClick}
+          disabled={!hasPermission("product:create")}
+        >
+          افزودن محصول
+        </Button>
+      </div>
 
       <AddProductModal
         allProducts={dataSource}
@@ -239,39 +253,32 @@ export default function ProductShowTable({
         editProductData={editProductData}
         time={time}
       />
-      {/* ✅ گوشی کارت است تا فقط بالا و پایین اسکرول شود؛ جدول برای دسکتاپ */}
-      <div className="mt-4 flex flex-col gap-3 md:hidden">
+      {/* ✅ گوشی: عکس تمام‌عرض بالا، متن و دکمه‌ها زیرش؛ کارت کوتاه است تا بعدی دیده شود */}
+      <div className="mt-4 flex flex-col gap-3 pb-16 md:hidden">
         {data.map((record) => {
           const src = productImage(record);
           return (
-            <Card key={record.id} size="small">
-              <div className="flex gap-3">
-                {src ? (
-                  <img
-                    src={src}
-                    alt=""
-                    className="h-[60px] w-[60px] shrink-0 rounded object-cover"
-                  />
-                ) : (
-                  <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center text-xs">
-                    بدون تصویر
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div>ID: {record.id}</div>
-                  <div>توضیحات: {record.desc}</div>
-                  <div className="break-words">Slug: {record.slug}</div>
-                  <div>قیمت: {priceText(record)}</div>
-                  <div>
-                    وضعیت:{" "}
-                    {record.isActive ? (
-                      <span style={{ color: "green" }}>🟢 فعال</span>
-                    ) : (
-                      <span style={{ color: "red" }}>🔴 غیرفعال</span>
-                    )}
-                  </div>
+            <Card key={record.id} size="small" styles={{ body: { padding: 0 } }}>
+              {src ? (
+                <img src={src} alt="" className="block h-32 w-full object-cover" />
+              ) : (
+                <div className="flex h-32 w-full items-center justify-center bg-light-myGray text-xs">
+                  بدون تصویر
                 </div>
-              </div>
+              )}
+              <div className="p-3">
+                <div>ID: {record.id}</div>
+                <div>توضیحات: {descriptionText(record)}</div>
+                <div className="break-words">Slug: {record.slug}</div>
+                <div>قیمت: {priceText(record)}</div>
+                <div>
+                  وضعیت:{" "}
+                  {record.isActive ? (
+                    <span style={{ color: "green" }}>🟢 فعال</span>
+                  ) : (
+                    <span style={{ color: "red" }}>🔴 غیرفعال</span>
+                  )}
+                </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button onClick={() => handleEditClick(record)}>ویرایش</Button>
                 <Popconfirm
@@ -294,6 +301,7 @@ export default function ProductShowTable({
                     حذف سخت
                   </Button>
                 </Popconfirm>
+              </div>
               </div>
             </Card>
           );

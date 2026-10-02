@@ -3,6 +3,8 @@
 import {
   addProductClient,
   addProductVariantClient,
+  editProductClient,
+  editProductVariantBatchClient,
   uploadImage,
 } from "@/components/utils/actionsClient";
 import { CameraOutlined, PictureOutlined } from "@ant-design/icons";
@@ -13,6 +15,7 @@ import {
   Input,
   InputNumber,
   Select,
+  Switch,
   Upload,
   message,
 } from "antd";
@@ -59,14 +62,21 @@ function errorText(data: any, fallback: string) {
   return Array.isArray(messageText) ? messageText[0] : messageText;
 }
 
+type KnownVariant = {
+  id?: number;
+  price?: number | string;
+  createdAt?: string;
+  desc?: string;
+  files?: { id: number }[];
+};
+
 type KnownProduct = {
   id: number;
   slug: string;
-  variants?: {
-    id?: number;
-    price?: number | string;
-    createdAt?: string;
-  }[];
+  isActive?: boolean;
+  categories?: { id: number }[];
+  files?: { id: number }[];
+  variants?: KnownVariant[];
 };
 
 // ✅ فاصله اضافه و ی/ک عربی با فارسی یکی حساب می‌شوند
@@ -91,28 +101,44 @@ function suggestionProducts(products: KnownProduct[]) {
   return unique;
 }
 
-function latestPrice(product: KnownProduct) {
+function latestVariant(product: KnownProduct) {
   const variants = Array.isArray(product.variants) ? product.variants : [];
-  const latest = variants.reduce<(typeof variants)[number] | undefined>(
-    (best, item) => {
-      if (!best) return item;
-      const bestTime = Date.parse(best.createdAt || "") || best.id || 0;
-      const itemTime = Date.parse(item.createdAt || "") || item.id || 0;
-      return itemTime >= bestTime ? item : best;
-    },
-    undefined
-  );
-  return latest?.price;
+  return variants.reduce<KnownVariant | undefined>((best, item) => {
+    if (!best) return item;
+    const bestTime = Date.parse(best.createdAt || "") || best.id || 0;
+    const itemTime = Date.parse(item.createdAt || "") || item.id || 0;
+    return itemTime >= bestTime ? item : best;
+  }, undefined);
+}
+
+function latestPrice(product: KnownProduct) {
+  return latestVariant(product)?.price;
+}
+
+function newestFile(files?: { id: number }[]) {
+  if (!files?.length) return null;
+  return files.reduce((best, file) => (file.id > best.id ? file : best));
+}
+
+// ✅ عکس نشان‌داده‌شده: فایل تنوع اگر هست، وگرنه فایل محصول؛ جدیدترین id
+function existingImage(product: KnownProduct) {
+  const variantFile = newestFile(latestVariant(product)?.files);
+  const file = variantFile || newestFile(product.files);
+  if (!file) return "";
+  const usage = variantFile ? "product-variant" : "product";
+  return `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${file.id}/${usage}`;
 }
 
 export default function SimpleAdd({
   categories,
   products,
   onSaved,
+  editing,
 }: {
   categories: { id: number; displayName: string }[];
   products: KnownProduct[];
   onSaved: () => void;
+  editing?: KnownProduct | null;
 }) {
   const [form] = Form.useForm();
   const [photo, setPhoto] = useState<File | null>(null);
@@ -140,8 +166,9 @@ export default function SimpleAdd({
     price: number;
     description?: string;
     categoryId?: number;
+    isActive?: boolean;
   }) => {
-    if (!photo) {
+    if (!editing && !photo) {
       message.error("تصویر را انتخاب کنید");
       return;
     }
@@ -161,6 +188,71 @@ export default function SimpleAdd({
         price: Number(values.price),
         props: [],
       };
+
+      // ✅ ویرایش همان محصول است: نام، قیمت ریال، توضیح، دسته، فعال، و عکس در صورت انتخاب
+      if (editing) {
+        const active = values.isActive !== false;
+        const productRes = await editProductClient(
+          {
+            slug: name,
+            isActive: active,
+            categoryIds: values.categoryId ? [values.categoryId] : [],
+          },
+          editing.id
+        );
+        const productBody = await productRes.json().catch(() => null);
+        if (!productRes.ok) {
+          throw new Error(errorText(productBody, "ویرایش انجام نشد"));
+        }
+
+        const current = latestVariant(editing);
+        let photoTarget = current?.id;
+        let photoUsage: "product" | "product-variant" = photoTarget
+          ? "product-variant"
+          : "product";
+        if (photoTarget) {
+          const variantRes = await editProductVariantBatchClient({
+            variants: [
+              {
+                id: photoTarget,
+                name,
+                desc: values.description?.trim() || "",
+                price: Number(values.price),
+                isActive: active,
+                productId: editing.id,
+              },
+            ],
+          });
+          const variantBody = await variantRes.json().catch(() => null);
+          if (!variantRes.ok) {
+            throw new Error(errorText(variantBody, "ویرایش قیمت انجام نشد"));
+          }
+        } else {
+          const variantRes = await addProductVariantClient({
+            variants: [{ ...variantPayload, isActive: active, productId: editing.id }],
+          });
+          const created = await variantRes.json().catch(() => null);
+          photoTarget = Array.isArray(created) ? created[0]?.id : created?.id;
+          photoUsage = photoTarget ? "product-variant" : "product";
+          if (!variantRes.ok || !photoTarget) {
+            throw new Error(errorText(created, "ثبت قیمت انجام نشد"));
+          }
+        }
+
+        if (photo) {
+          const body = new FormData();
+          body.append("file", photo);
+          await uploadImage(photoTarget || editing.id, photoUsage, body);
+        }
+
+        form.resetFields();
+        if (preview) URL.revokeObjectURL(preview);
+        setPreview("");
+        setPhoto(null);
+        message.success("ویرایش شد");
+        onSaved();
+        return;
+      }
 
       // ✅ نام تکراری فقط تنوع جدید می‌سازد؛ تنوع‌های قبلی می‌مانند
       if (existing) {
@@ -212,6 +304,10 @@ export default function SimpleAdd({
     }
   };
 
+  const current = editing ? latestVariant(editing) : undefined;
+  const currentPrice = current?.price;
+  const shownPhoto = preview || (editing ? existingImage(editing) : "");
+
   return (
     <Form
       form={form}
@@ -219,6 +315,22 @@ export default function SimpleAdd({
       onFinish={onFinish}
       autoComplete="off"
       style={{ maxWidth: 560 }}
+      initialValues={
+        editing
+          ? {
+              name: editing.slug,
+              price:
+                currentPrice === undefined ||
+                currentPrice === null ||
+                currentPrice === ""
+                  ? undefined
+                  : Number(currentPrice),
+              description: current?.desc || "",
+              categoryId: editing.categories?.[0]?.id,
+              isActive: editing.isActive !== false,
+            }
+          : undefined
+      }
     >
       <Form.Item label="تصویر">
         <div style={{ display: "flex", gap: 8 }}>
@@ -241,7 +353,7 @@ export default function SimpleAdd({
             <Button icon={<PictureOutlined />}>گالری</Button>
           </Upload>
         </div>
-        {preview && (
+        {shownPhoto && (
           <div
             style={{
               marginTop: 12,
@@ -252,7 +364,7 @@ export default function SimpleAdd({
           >
             <img
               alt=""
-              src={preview}
+              src={shownPhoto}
               style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
             />
           </div>
@@ -319,9 +431,15 @@ export default function SimpleAdd({
         />
       </Form.Item>
 
+      {editing && (
+        <Form.Item label="فعال" name="isActive" valuePropName="checked">
+          <Switch />
+        </Form.Item>
+      )}
+
       <Form.Item>
         <Button type="primary" htmlType="submit" loading={saving}>
-          ثبت
+          {editing ? "ویرایش" : "ثبت"}
         </Button>
       </Form.Item>
     </Form>

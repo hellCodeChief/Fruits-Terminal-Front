@@ -1,7 +1,6 @@
 "use client";
 
 import { Modal } from "antd";
-import AddProductForm from "./product-form";
 import SimpleAdd from "../simple-add";
 
 const AddProductModalApp = ({
@@ -12,7 +11,6 @@ const AddProductModalApp = ({
   setOpen,
   editProductData,
   isEdit,
-  time,
 }: any) => {
   return (
     <Modal
@@ -22,24 +20,16 @@ const AddProductModalApp = ({
       footer={null}
       destroyOnClose
     >
-      {isEdit ? (
-        <AddProductForm
-          isEdit
-          editProductData={editProductData}
-          allCategories={allCategories}
-          refetchProduct={refetchProduct}
-          time={time}
-        />
-      ) : (
-        <SimpleAdd
-          categories={allCategories}
-          products={products}
-          onSaved={() => {
-            refetchProduct();
-            setOpen(false);
-          }}
-        />
-      )}
+      {/* ✅ ویرایش همان فرم افزودن ساده است، نه فرم محدود قبلی */}
+      <SimpleAdd
+        categories={allCategories}
+        products={products}
+        editing={isEdit ? editProductData : null}
+        onSaved={() => {
+          refetchProduct();
+          setOpen(false);
+        }}
+      />
     </Modal>
   );
 };
