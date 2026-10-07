@@ -1,13 +1,14 @@
 "use client";
 
-import { Button, Card, message, Modal, Popconfirm, Table } from "antd";
+import { Button, message, Popconfirm, Table } from "antd";
 import type { TableProps } from "antd";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getAllProductClient,
   softDeleteProductClient,
   hardDeleteProductClient,
 } from "@/components/utils/actionsClient";
+import DailyProductCard from "@/components/daily-product-card/daily-product-card";
 import AddProductModal from "./add/product-modal";
 
 interface DataType {
@@ -26,6 +27,7 @@ interface DataType {
     price?: number | string;
     createdAt?: string;
     desc?: string;
+    minOrder?: number | string | null;
     files?: { id: number }[];
   }[];
 }
@@ -69,35 +71,11 @@ function descriptionText(record: DataType) {
   return latestVariant(record)?.desc || record.desc || "";
 }
 
-// ✅ توضیح اگر از یک ردیف بلندتر باشد، بقیه در مودال
-function DescriptionRow({ text }: { text: string }) {
-  const lineRef = useRef<HTMLSpanElement>(null);
-  const [open, setOpen] = useState(false);
-  const [overflow, setOverflow] = useState(false);
-
-  useEffect(() => {
-    const line = lineRef.current;
-    if (!line) return;
-    setOverflow(line.scrollWidth > line.clientWidth + 1);
-  }, [text]);
-
-  return (
-    <>
-      <div className="mt-1 flex min-w-0 items-center gap-2">
-        <span ref={lineRef} className="min-w-0 flex-1 truncate">
-          توضیحات: {text}
-        </span>
-        {overflow && (
-          <button type="button" className="shrink-0" onClick={() => setOpen(true)}>
-            بیشتر…
-          </button>
-        )}
-      </div>
-      <Modal open={open} title="توضیحات" footer={null} onCancel={() => setOpen(false)}>
-        {text}
-      </Modal>
-    </>
-  );
+// ✅ حداقل سفارش همان تنوع، به کیلو
+function minOrderText(record: DataType) {
+  const amount = latestVariant(record)?.minOrder;
+  if (amount === undefined || amount === null || amount === "") return "—";
+  return `${amount} کیلو`;
 }
 
 // ✅ جدیدترین فایل؛ عکس تازه‌آپلودشده جای عکس قبلی را می‌گیرد
@@ -225,6 +203,12 @@ export default function ProductShowTable({
       key: "price",
       render: (_, record) => priceText(record),
     },
+    // ✅ حداقل سفارش همان تنوعی که قیمت از آن خوانده می‌شود
+    {
+      title: "حداقل سفارش",
+      key: "minOrder",
+      render: (_, record) => minOrderText(record),
+    },
     {
       title: "وضعیت",
       dataIndex: "isActive",
@@ -297,43 +281,13 @@ export default function ProductShowTable({
       />
       {/* ✅ گوشی: عکس تمام‌عرض بالا، متن و دکمه‌ها زیرش؛ کارت کوتاه است تا بعدی دیده شود */}
       {/* ✅ عرض کارت از صفحه بیرون نزند تا اسکرول افقی نماند */}
+      {/* ✅ همان کارت صفحه عمومی؛ دکمه‌های مدیریت فقط اینجاست */}
       <div className="mt-4 flex w-full min-w-0 max-w-full flex-col gap-3 overflow-x-hidden pb-24 md:hidden">
-        {data.map((record) => {
-          const src = productImage(record);
-          return (
-            <Card
-              key={record.id}
-              size="small"
-              className="w-full min-w-0 max-w-full overflow-hidden"
-              styles={{ body: { padding: 0 } }}
-            >
-              {src ? (
-                <img
-                  src={src}
-                  alt=""
-                  className="block aspect-square w-full min-w-0 max-w-full object-cover"
-                />
-              ) : (
-                <div className="flex aspect-square w-full min-w-0 max-w-full items-center justify-center bg-light-myGray text-xs">
-                  بدون تصویر
-                </div>
-              )}
-              {/* ✅ دو ستون تا کارت کوتاه‌تر بماند؛ قیمت درشت است */}
-              <div className="min-w-0 p-3">
-                <div className="grid min-w-0 grid-cols-2 gap-x-3 gap-y-1">
-                  <div className="min-w-0 break-words">ID: {record.id}</div>
-                  <div className="min-w-0 break-words font-bold">قیمت: {priceText(record)}</div>
-                  <div className="min-w-0 truncate">Slug: {record.slug}</div>
-                  <div className="min-w-0 break-words">
-                    وضعیت:{" "}
-                    {record.isActive ? (
-                      <span style={{ color: "green" }}>🟢 فعال</span>
-                    ) : (
-                      <span style={{ color: "red" }}>🔴 غیرفعال</span>
-                    )}
-                  </div>
-                </div>
-                <DescriptionRow text={descriptionText(record)} />
+        {data.map((record) => (
+          <DailyProductCard
+            key={record.id}
+            product={record}
+            extra={
               <div className="mt-3 flex min-w-0 flex-wrap gap-2">
                 <Button onClick={() => handleEditClick(record)}>ویرایش</Button>
                 <Popconfirm
@@ -357,10 +311,9 @@ export default function ProductShowTable({
                   </Button>
                 </Popconfirm>
               </div>
-              </div>
-            </Card>
-          );
-        })}
+            }
+          />
+        ))}
       </div>
       <div className="hidden overflow-auto md:block">
         <Table dataSource={data} columns={columns} rowKey="id" />

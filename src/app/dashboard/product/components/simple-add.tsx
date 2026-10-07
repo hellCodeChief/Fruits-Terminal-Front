@@ -67,6 +67,7 @@ type KnownVariant = {
   price?: number | string;
   createdAt?: string;
   desc?: string;
+  minOrder?: number | string | null;
   files?: { id: number }[];
 };
 
@@ -164,6 +165,7 @@ export default function SimpleAdd({
   const onFinish = async (values: {
     name: string;
     price: number;
+    minOrder: number;
     description?: string;
     categoryId?: number;
     isActive?: boolean;
@@ -186,6 +188,8 @@ export default function SimpleAdd({
         isActive: true,
         isDefault: true,
         price: Number(values.price),
+        // ✅ حداقل سفارش به کیلو، روی همین تنوع
+        minOrder: Number(values.minOrder),
         props: [],
       };
 
@@ -218,6 +222,7 @@ export default function SimpleAdd({
                 name,
                 desc: values.description?.trim() || "",
                 price: Number(values.price),
+                minOrder: Number(values.minOrder),
                 isActive: active,
                 productId: editing.id,
               },
@@ -326,6 +331,12 @@ export default function SimpleAdd({
                   ? undefined
                   : Number(currentPrice),
               description: current?.desc || "",
+              minOrder:
+                current?.minOrder === undefined ||
+                current?.minOrder === null ||
+                current?.minOrder === ""
+                  ? undefined
+                  : Number(current.minOrder),
               isActive: editing.isActive !== false,
             }
           : undefined
@@ -414,6 +425,25 @@ export default function SimpleAdd({
       >
         {/* ✅ قیمت به ریال؛ همان عددی که وارد می‌شود ذخیره و نشان داده می‌شود */}
         <InputNumber min={1} style={{ width: "100%" }} addonAfter="ریال" />
+      </Form.Item>
+
+      {/* ✅ حداقل سفارش به کیلو؛ واحد جدا پرسیده نمی‌شود */}
+      <Form.Item
+        label="حداقل سفارش"
+        name="minOrder"
+        rules={[
+          { required: true, message: "حداقل سفارش را وارد کنید" },
+          {
+            validator: async (_, value) => {
+              if (value === undefined || value === null || value === "") return;
+              if (!Number.isInteger(value) || value < 1) {
+                throw new Error("حداقل سفارش باید عدد صحیح و حداقل ۱ باشد");
+              }
+            },
+          },
+        ]}
+      >
+        <InputNumber min={1} precision={0} step={1} style={{ width: "100%" }} addonAfter="کیلو" />
       </Form.Item>
 
       <Form.Item label="توضیح" name="description">
