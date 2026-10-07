@@ -7,17 +7,18 @@ const tiles = [
   {
     title: "میوه‌های روز",
     href: "#daily-products",
-    src: "/landing/daily-fruits.png",
+    // نام تازه تا گوشی عکس کش‌شده قبلی را نگه ندارد
+    src: "/landing/daily-crates.png",
   },
   {
     title: "محصولات میوه",
     href: "/products",
-    src: "/landing/fruit-products.png",
+    src: "/landing/fruit-vinegar.png",
   },
   {
     title: "سفارش میوه برای مراسم",
     href: "",
-    src: "/landing/ceremony-order.png",
+    src: "/landing/ceremony-bulk.png",
   },
 ];
 
