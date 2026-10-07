@@ -42,6 +42,8 @@ function listedProducts(
 
   const filtered = products.filter((product) => {
     const variants = Array.isArray(product.variants) ? product.variants : [];
+    // ✅ ردیف قدیمی بدون تنوع کارت روزانه نمی‌گیرد
+    if (variants.length === 0) return false;
     const categories = Array.isArray(product.categories) ? product.categories : [];
     if (categoryIds.length && !categories.some((cat: any) => categoryIds.includes(cat.id))) {
       return false;

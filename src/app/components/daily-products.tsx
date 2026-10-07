@@ -15,7 +15,13 @@ export default function DailyProducts() {
     getAllProductClient().then((list) => {
       if (ignore) return;
       const items = Array.isArray(list) ? list : [];
-      setProducts([...items].sort((a, b) => variantSortTime(b) - variantSortTime(a)));
+      // ✅ ردیف قدیمی بدون تنوع کارت روزانه نمی‌گیرد
+      const withVariants = items.filter(
+        (product) => Array.isArray(product?.variants) && product.variants.length > 0
+      );
+      setProducts(
+        [...withVariants].sort((a, b) => variantSortTime(b) - variantSortTime(a))
+      );
     });
     return () => {
       ignore = true;
