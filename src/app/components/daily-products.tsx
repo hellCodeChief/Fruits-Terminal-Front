@@ -25,10 +25,14 @@ export default function DailyProducts() {
   if (!products.length) return null;
 
   return (
-    <div className="mt-4 flex w-full min-w-0 max-w-full flex-col gap-3">
-      {products.map((product) => (
-        <DailyProductCard key={product.id} product={product} />
-      ))}
-    </div>
+    <section className="mt-4 w-full min-w-0 max-w-full">
+      {/* ✅ عنوان همین بلوک لندینگ */}
+      <h2 className="font-bold text-xl">میوه‌های روز</h2>
+      <div className="mt-4 flex w-full min-w-0 max-w-full flex-col gap-3">
+        {products.map((product) => (
+          <DailyProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </section>
   );
 }

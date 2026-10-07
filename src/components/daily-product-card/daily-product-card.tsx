@@ -125,7 +125,8 @@ export default function DailyProductCard({
   return (
     <Card
       size="small"
-      className="w-full min-w-0 max-w-full overflow-hidden"
+      // ✅ سایه و حاشیه کم تا کارت از صفحه سفید جدا شود
+      className="w-full min-w-0 max-w-full overflow-hidden !border !border-neutral-200 shadow-sm"
       styles={{ body: { padding: 0 } }}
     >
       {src ? (
