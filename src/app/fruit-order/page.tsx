@@ -1,3 +1,5 @@
+"use client";
+
 import { Typography } from "antd";
 
 // ✅ هنوز سفارش خریدی نیست؛ فقط عنوان
