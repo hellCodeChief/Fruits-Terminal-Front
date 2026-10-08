@@ -1,6 +1,7 @@
 "use client";
 import React, { ReactNode } from "react";
 import Menu from "./menu";
+import PublicNav from "./public-nav";
 import { Provider } from "react-redux";
 import { store } from "@/app/store";
 
@@ -14,6 +15,7 @@ export default function PageFrame({ children }: PageFrameProps) {
     <div className="relative h-screen w-full min-w-0 max-w-full overflow-x-clip no-scrollbar">
       <Provider store={store}>
         <Menu />
+        <PublicNav />
         {children}
       </Provider>
     </div>
