@@ -13,18 +13,15 @@ import {
 import { Button, theme } from "antd";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 
 const items = [
   { label: "خانه", href: "/", icon: HomeOutlined, activeIcon: HomeFilled },
-  { label: "حجره", href: "/#daily-products", icon: ShopOutlined, activeIcon: ShopFilled },
+  { label: "حجره", href: "/daily-products", icon: ShopOutlined, activeIcon: ShopFilled },
   { label: "فراورده میوه", href: "/fruit-produce", icon: AppleOutlined, activeIcon: AppleFilled },
   { label: "سفارش خرید", href: "/fruit-order", icon: ShoppingOutlined, activeIcon: ShoppingFilled },
 ];
 
-function itemIsActive(href: string, pathname: string, hash: string) {
-  if (href === "/#daily-products") return pathname === "/" && hash === "#daily-products";
-  if (href === "/") return pathname === "/" && hash !== "#daily-products";
+function itemIsActive(href: string, pathname: string) {
   return pathname === href;
 }
 
@@ -32,22 +29,14 @@ function itemIsActive(href: string, pathname: string, hash: string) {
 export default function PublicNav() {
   const pathname = usePathname();
   const { token } = theme.useToken();
-  const [hash, setHash] = useState("");
-
-  useEffect(() => {
-    const read = () => setHash(window.location.hash);
-    read();
-    window.addEventListener("hashchange", read);
-    return () => window.removeEventListener("hashchange", read);
-  }, [pathname]);
 
   if (pathname.startsWith("/dashboard")) return null;
 
   return (
     <>
-      <nav className="hidden w-full flex-wrap gap-2 p-2 lg:flex">
+      <nav className="hidden w-full flex-wrap gap-2 bg-light-surface p-2 lg:flex">
         {items.map((item) => {
-          const active = itemIsActive(item.href, pathname, hash);
+          const active = itemIsActive(item.href, pathname);
           return (
             <Link key={item.href} href={item.href} className="min-w-0 flex-1">
               <Button block type={active ? "primary" : "default"}>
@@ -59,16 +48,15 @@ export default function PublicNav() {
       </nav>
 
       <nav
-        className="fixed inset-x-3 bottom-3 z-40 w-auto p-1 lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 w-auto bg-light-surface p-1 lg:hidden"
         style={{
-          background: token.colorBgContainer,
           borderRadius: token.borderRadiusLG * 2,
           boxShadow: token.boxShadowSecondary,
         }}
       >
         <div className="flex w-full">
           {items.map((item) => {
-            const active = itemIsActive(item.href, pathname, hash);
+            const active = itemIsActive(item.href, pathname);
             const Icon = active ? item.activeIcon : item.icon;
             return (
               <Link key={item.href} href={item.href} className="w-1/4 min-w-0 p-1">

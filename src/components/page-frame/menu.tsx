@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 // icons import
-import { RiFileList2Line } from "react-icons/ri";
-import { FaRegHeart } from "react-icons/fa6";
-import { FiSearch } from "react-icons/fi";
+// ✅ آیکون‌های سبد، علاقه و جستجو کنار کاربر خاموش شده‌اند
+// import { RiFileList2Line } from "react-icons/ri";
+// import { FaRegHeart } from "react-icons/fa6";
+// import { FiSearch } from "react-icons/fi";
 import { RiMenu3Fill } from "react-icons/ri";
 import DropDownShop from "./dropdowns/shop";
 import DropDownHome from "./dropdowns/home";
@@ -20,7 +21,6 @@ import { RootState } from "@/app/store";
 import { getUserOpenBasket } from "../utils/actionsClient";
 import { useDispatch } from "react-redux";
 import { setBasket } from "@/app/store/basket/basketSlice";
-import { Badge } from "antd";
 
 export default function PageFrameMenu() {
   const [menuIsClose, setMenuIsClose] = useState(true);
@@ -64,7 +64,8 @@ export default function PageFrameMenu() {
 
   return (
     <>
-      <header className="sticky z-50 top-0 bg-light-myWhite w-full">
+      {/* ✅ سطح هدر همان پس‌زمینه روشن نوار است */}
+      <header className="sticky z-50 top-0 bg-light-surface w-full">
         {/* ✅ فقط ارتفاع کمتر؛ چیدمان هدر همان است */}
         <div className="c_container m-auto w-full h-[56px] flex justify-between items-center">
           {/* menu btn */}
@@ -104,6 +105,7 @@ export default function PageFrameMenu() {
           </div>
           {/* cart icons */}
           <div className="flex-[3] flex justify-end gap-3">
+            {/* ✅ آیکون‌های سمت چپ؛ فقط کاربر می‌ماند
             <button
               className="relative"
               onClick={() => {
@@ -119,13 +121,11 @@ export default function PageFrameMenu() {
             <button className="">
               <FaRegHeart className="text-[24px]" />
             </button>
-            {/* <button className="">
-            <FaRegUser className="text-[24px]" />
-          </button> */}
-            <UserDropdown />
             <button className="">
               <FiSearch className="text-[24px]" />
             </button>
+            */}
+            <UserDropdown />
           </div>
         </div>
       </header>
@@ -145,7 +145,7 @@ export default function PageFrameMenu() {
       {/* menu container */}
       <div
         onClick={handleMenuClick}
-        className={`fixed z-50 bg-light-myWhite top-0 right-0 h-full w-[70vw] md:w-[50vw] duration-500 transition-transform ${
+        className={`fixed z-50 bg-light-surface top-0 right-0 h-full w-[70vw] md:w-[50vw] duration-500 transition-transform ${
           menuIsClose ? "translate-x-full" : "translate-x-0"
         }`}
       >
@@ -154,7 +154,7 @@ export default function PageFrameMenu() {
       {/* cart container */}
       <div
         onClick={handleMenuClick}
-        className={`fixed z-50 bg-light-myWhite top-0 left-0 h-full max-w-[400px] w-[70vw] md:w-[50vw] duration-500 transition-transform ${
+        className={`fixed z-50 bg-light-surface top-0 left-0 h-full max-w-[400px] w-[70vw] md:w-[50vw] duration-500 transition-transform ${
           cartIsClose ? "-translate-x-full" : "translate-x-0"
         }`}
       >

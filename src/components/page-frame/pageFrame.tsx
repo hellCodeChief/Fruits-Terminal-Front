@@ -16,7 +16,11 @@ export default function PageFrame({ children }: PageFrameProps) {
 
   return (
     // ✅ پوسته هم‌عرض پنجره؛ اسکرول افقی روی بدنه و این قاب نماند
-    <div className="relative h-screen w-full min-w-0 max-w-full overflow-x-clip no-scrollbar">
+    <div
+      className={`relative h-screen w-full min-w-0 max-w-full overflow-x-clip no-scrollbar ${
+        publicSite ? "bg-light-page" : ""
+      }`}
+    >
       <Provider store={store}>
         <Menu />
         <PublicNav />
