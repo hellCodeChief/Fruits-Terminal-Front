@@ -100,6 +100,32 @@ function productList(data) {
   return [];
 }
 
+export async function getAllDailyProductClient() {
+  try {
+    const res = await authFetch(`${BASE_URL}/daily-product`, {});
+    const data = await res.json();
+    return productList(data);
+  } catch (err) {
+    console.log("handling error", err);
+    return [];
+  }
+}
+
+export const addDailyProductClient = async (_productData) => {
+  try {
+    const response = await authFetch(`${BASE_URL}/daily-product`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(_productData),
+    });
+    return response;
+  } catch (err) {
+    throw new Error("Failed to add daily product", err);
+  }
+};
+
 export async function getAllProductClient() {
   try {
     const res = await authFetch(`${BASE_URL}/product`, {});

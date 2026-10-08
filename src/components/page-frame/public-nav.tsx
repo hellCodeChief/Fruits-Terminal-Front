@@ -47,31 +47,33 @@ export default function PublicNav() {
         })}
       </nav>
 
+      {/* ✅ تمام‌عرض و چسبیده به پایین؛ بدون گوشه گرد و بدون فاصله از لبه */}
       <nav
-        className="fixed inset-x-3 bottom-3 z-40 w-auto bg-light-surface p-1 lg:hidden"
-        style={{
-          borderRadius: token.borderRadiusLG * 2,
-          boxShadow: token.boxShadowSecondary,
-        }}
+        className="fixed inset-x-0 bottom-0 z-40 w-full bg-light-surface lg:hidden"
+        style={{ boxShadow: token.boxShadowSecondary }}
       >
         <div className="flex w-full">
           {items.map((item) => {
             const active = itemIsActive(item.href, pathname);
             const Icon = active ? item.activeIcon : item.icon;
             return (
-              <Link key={item.href} href={item.href} className="w-1/4 min-w-0 p-1">
-                <Button block type={active ? "primary" : "text"} style={{ height: "auto" }}>
+              <Link key={item.href} href={item.href} className="w-1/4 min-w-0">
+                <Button
+                  block
+                  type={active ? "primary" : "text"}
+                  style={{ height: "auto", paddingTop: 10, paddingBottom: 10 }}
+                >
                   <span
                     style={{
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      gap: 2,
-                      fontSize: 11,
+                      gap: 6,
+                      fontSize: 13,
                       lineHeight: 1.2,
                     }}
                   >
-                    <Icon style={{ fontSize: 20 }} />
+                    <Icon style={{ fontSize: 24 }} />
                     {item.label}
                   </span>
                 </Button>

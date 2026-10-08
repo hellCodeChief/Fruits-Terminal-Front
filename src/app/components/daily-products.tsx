@@ -3,16 +3,16 @@
 import DailyProductCard, {
   variantSortTime,
 } from "@/components/daily-product-card/daily-product-card";
-import { getAllProductClient } from "@/components/utils/actionsClient";
+import { getAllDailyProductClient } from "@/components/utils/actionsClient";
 import { useEffect, useState } from "react";
 
-// ✅ همان خواندن زنده صفحه محصولات؛ آخرین تنوع هر محصول، تازه‌ترین اول
+// ✅ ویترین از جدول dailyProduct؛ تازه‌ترین اول
 export default function DailyProducts() {
   const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
     let ignore = false;
-    getAllProductClient().then((list) => {
+    getAllDailyProductClient().then((list) => {
       if (ignore) return;
       const items = Array.isArray(list) ? list : [];
       // ✅ ردیف قدیمی بدون تنوع کارت روزانه نمی‌گیرد
