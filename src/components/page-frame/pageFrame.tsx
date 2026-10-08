@@ -10,7 +10,8 @@ interface PageFrameProps {
 
 export default function PageFrame({ children }: PageFrameProps) {
   return (
-    <div className="relative h-screen no-scrollbar">
+    // ✅ پوسته هم‌عرض پنجره؛ اسکرول افقی روی بدنه و این قاب نماند
+    <div className="relative h-screen w-full min-w-0 max-w-full overflow-x-clip no-scrollbar">
       <Provider store={store}>
         <Menu />
         {children}

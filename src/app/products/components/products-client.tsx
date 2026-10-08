@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CiFilter } from "react-icons/ci";
 import SortSelect from "./sort";
 import Filters from "./filters";
-import ProductCard from "@/components/product-card/product-card";
+import DailyProductCard from "@/components/daily-product-card/daily-product-card";
 
 type Props = {
   categories: { id: number; displayName: string }[];
@@ -38,10 +38,10 @@ export default function ProductsClient({ categories, products }: Props) {
           <Filters categories={categories} />
         </div>
 
-        {/* Products */}
-        <div className="flex-1 flex flex-wrap justify-between gap-4">
+        {/* ✅ همان کارت روزانه؛ آخرین تنوع هر محصول از قبل مرتب شده */}
+        <div className="flex-1 flex min-w-0 flex-col gap-3">
           {products.map((p) => (
-            <ProductCard key={p.id} item={p} />
+            <DailyProductCard key={p.id} product={p} />
           ))}
         </div>
       </main>

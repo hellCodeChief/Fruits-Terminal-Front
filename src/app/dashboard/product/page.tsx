@@ -32,7 +32,7 @@ export default function AdminProductPage() {
       const products = await getAllProductClient();
       const categories = await getAllCategoriesClient();
 
-      setAllProducts(products || []);
+      setAllProducts(Array.isArray(products) ? products : []);
       setAllCategories(categories || []);
       setLoading(false);
     }
@@ -44,7 +44,6 @@ export default function AdminProductPage() {
 
   return (
     <>
-      {/* جدول محصولات */}
       <ProductShowTable
         dataSource={allProducts}
         allCategories={allCategories}

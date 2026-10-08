@@ -65,7 +65,8 @@ export default function PageFrameMenu() {
   return (
     <>
       <header className="sticky z-50 top-0 bg-light-myWhite w-full">
-        <div className="c_container m-auto w-full h-[90px] flex justify-between items-center">
+        {/* ✅ فقط ارتفاع کمتر؛ چیدمان هدر همان است */}
+        <div className="c_container m-auto w-full h-[56px] flex justify-between items-center">
           {/* menu btn */}
           <button
             className="block lg:hidden flex-1 md:flex-[3]"
@@ -81,7 +82,7 @@ export default function PageFrameMenu() {
             href={`/`}
             className="h-full flex justify-start items-center flex-[2] lg:flex-[3] flex justify-center lg:justify-start"
           >
-            <div className="relative w-[150px] h-[75px]">
+            <div className="relative w-[150px] h-[48px]">
               <Image
                 fill
                 className="object-contain"
@@ -140,11 +141,12 @@ export default function PageFrameMenu() {
           backDrop ? "opacity-1 visible" : "opacity-0 invisible"
         }`}
       ></div>
+      {/* ✅ بسته با translate بیرون می‌رود؛ right/left منفی با vw عرض صفحه را زیاد می‌کرد */}
       {/* menu container */}
       <div
         onClick={handleMenuClick}
-        className={`fixed z-50 bg-light-myWhite top-0 h-full w-[70vw] md:w-[50vw] duration-500 ${
-          menuIsClose ? "rtl:right-[-70vw]" : "rtl:right-[0]"
+        className={`fixed z-50 bg-light-myWhite top-0 right-0 h-full w-[70vw] md:w-[50vw] duration-500 transition-transform ${
+          menuIsClose ? "translate-x-full" : "translate-x-0"
         }`}
       >
         <MenuSideContent />
@@ -152,8 +154,8 @@ export default function PageFrameMenu() {
       {/* cart container */}
       <div
         onClick={handleMenuClick}
-        className={`fixed z-50 bg-light-myWhite top-0 h-full max-w-[400px] w-[70vw] md:w-[50vw] duration-500 ${
-          cartIsClose ? "rtl:left-[-70vw]" : "rtl:left-[0]"
+        className={`fixed z-50 bg-light-myWhite top-0 left-0 h-full max-w-[400px] w-[70vw] md:w-[50vw] duration-500 transition-transform ${
+          cartIsClose ? "-translate-x-full" : "translate-x-0"
         }`}
       >
         <SideBasketContent

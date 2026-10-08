@@ -8,6 +8,13 @@
   box-sizing: border-box;
 }
 
+/* ✅ 100vw نوار اسکرول را هم حساب می‌کند و صفحه را پهن می‌کند؛ عرض از خود پنجره باشد */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 /* Hide scrollbar */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

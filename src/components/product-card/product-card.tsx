@@ -14,12 +14,23 @@ import { imgSrcCreator } from "../utils/helper/imgSrcCreator";
 import { formatPriceNumber } from "../utils/helper/formatPrice";
 import AddToBasketModal from "../add-basket-modal/add-basket-modat";
 
+function latestVariant(variants: any[]) {
+  return variants.reduce((latest, item) => {
+    if (!latest) return item;
+    const latestTime = Date.parse(latest.createdAt || "") || latest.id || 0;
+    const itemTime = Date.parse(item.createdAt || "") || item.id || 0;
+    return itemTime >= latestTime ? item : latest;
+  }, null);
+}
+
 export default function ProductCard({
   fullWidth = false,
   item,
+  preferLatest = false,
 }: {
   fullWidth?: boolean;
   item: any;
+  preferLatest?: boolean;
 }) {
   const singleProductData = () => {
     return {
@@ -46,14 +57,20 @@ export default function ProductCard({
 
   const rewriteData = singleProductData();
 
+  const variants = Array.isArray(item?.variants) ? item.variants : [];
+  // ✅ قیمت و عکس تازه‌ترین تنوع؛ همان عدد ریال، بدون تبدیل
+  const shownVariant = preferLatest
+    ? latestVariant(variants)
+    : variants[0] || null;
+  const latestPhoto = shownVariant?.files?.[0];
   const [isSelectedHeart, setIsSelectedHeart] = useState(false);
   const [currentImage, setCurrentImage] = useState(
-    (Array.isArray(rewriteData?.files) && rewriteData.files[0]?.fileUrl) ||
-      "/temp.jpg"
+    preferLatest && latestPhoto
+      ? imgSrcCreator(latestPhoto.id, "product-variant")
+      : (Array.isArray(rewriteData?.files) && rewriteData.files[0]?.fileUrl) ||
+          "/temp.jpg"
   );
-  const [currentVariant, setCurrentVariant] = useState(
-    (Array.isArray(item?.variants) && item.variants[0]) || null
-  );
+  const [currentVariant, setCurrentVariant] = useState(shownVariant);
 
   const handleToggle = () => {
     setIsSelectedHeart(!isSelectedHeart);
