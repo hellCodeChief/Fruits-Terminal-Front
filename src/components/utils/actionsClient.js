@@ -126,6 +126,52 @@ export const addDailyProductClient = async (_productData) => {
   }
 };
 
+// ✅ ویرایش همان ردیف dailyProduct؛ ردیف‌های دیگر پاک نمی‌شوند
+export const editDailyProductClient = async (_productData, _id) => {
+  try {
+    const response = await authFetch(`${BASE_URL}/daily-product/${_id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(_productData),
+    });
+    return response;
+  } catch (err) {
+    throw new Error("Failed to edit daily product", err);
+  }
+};
+
+export const softDeleteDailyProductClient = async (_id) => {
+  try {
+    const res = await authFetch(`${BASE_URL}/daily-product/${_id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to delete daily product");
+    }
+    return await res.json();
+  } catch (err) {
+    throw new Error(err.message || "An error occurred while deleting");
+  }
+};
+
+export const hardDeleteDailyProductClient = async (_id) => {
+  try {
+    const res = await authFetch(`${BASE_URL}/daily-product/hard-delete/${_id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to delete daily product");
+    }
+    return await res.json();
+  } catch (err) {
+    throw new Error(err.message || "An error occurred while deleting");
+  }
+};
+
 export async function getAllProductClient() {
   try {
     const res = await authFetch(`${BASE_URL}/product`, {});

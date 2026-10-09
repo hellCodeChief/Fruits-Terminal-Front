@@ -2,9 +2,7 @@
 
 import {
   addDailyProductClient,
-  addProductVariantClient,
-  editProductClient,
-  editProductVariantBatchClient,
+  editDailyProductClient,
   getAllDailyProductClient,
   uploadImage,
 } from "@/components/utils/actionsClient";
@@ -186,74 +184,26 @@ export default function SimpleAdd({
     const name = values.name.trim();
     setSaving(true);
     try {
-      const variantPayload = {
-        name,
-        slug: `p${Date.now().toString(36)}`,
-        stock: 0,
-        desc: values.description?.trim() || "",
-        isActive: true,
-        isDefault: true,
+      const payload = {
+        slug: name,
         price: Number(values.price),
-        // ✅ حداقل سفارش به کیلو، روی همین تنوع
         minOrder: Number(values.minOrder),
-        props: [],
+        desc: values.description?.trim() || "",
+        isActive: values.isActive !== false,
       };
 
-      // ✅ ویرایش کاتالوگ روی product می‌ماند؛ تنوع‌های دیگر پاک نمی‌شوند
+      // ✅ ویرایش فقط همین ردیف dailyProduct؛ بقیه ردیف‌ها می‌مانند
       if (editing) {
-        const active = values.isActive !== false;
-        // ✅ بدنه ویرایش categoriesId و categoryIds ندارد؛ وایت‌لیست هر دو را رد می‌کند
-        const productRes = await editProductClient(
-          {
-            slug: name,
-            isActive: active,
-          },
-          editing.id
-        );
+        const productRes = await editDailyProductClient(payload, editing.id);
         const productBody = await productRes.json().catch(() => null);
         if (!productRes.ok) {
           throw new Error(errorText(productBody, "ویرایش انجام نشد"));
         }
 
-        const current = latestVariant(editing);
-        let photoTarget = current?.id;
-        let photoUsage: "product" | "product-variant" = photoTarget
-          ? "product-variant"
-          : "product";
-        if (photoTarget) {
-          const variantRes = await editProductVariantBatchClient({
-            variants: [
-              {
-                id: photoTarget,
-                name,
-                desc: values.description?.trim() || "",
-                price: Number(values.price),
-                minOrder: Number(values.minOrder),
-                isActive: active,
-                productId: editing.id,
-              },
-            ],
-          });
-          const variantBody = await variantRes.json().catch(() => null);
-          if (!variantRes.ok) {
-            throw new Error(errorText(variantBody, "ویرایش قیمت انجام نشد"));
-          }
-        } else {
-          const variantRes = await addProductVariantClient({
-            variants: [{ ...variantPayload, isActive: active, productId: editing.id }],
-          });
-          const created = await variantRes.json().catch(() => null);
-          photoTarget = Array.isArray(created) ? created[0]?.id : created?.id;
-          photoUsage = photoTarget ? "product-variant" : "product";
-          if (!variantRes.ok || !photoTarget) {
-            throw new Error(errorText(created, "ثبت قیمت انجام نشد"));
-          }
-        }
-
         if (photo) {
           const body = new FormData();
           body.append("file", photo);
-          await uploadImage(photoTarget || editing.id, photoUsage, body);
+          await uploadImage(editing.id, "daily-product", body);
         }
 
         form.resetFields();
@@ -266,13 +216,7 @@ export default function SimpleAdd({
       }
 
       // ✅ حجره ردیف جدید در dailyProduct است؛ نام تکراری ردیف‌های قبلی را پاک نمی‌کند
-      const productRes = await addDailyProductClient({
-        slug: name,
-        price: Number(values.price),
-        minOrder: Number(values.minOrder),
-        desc: values.description?.trim() || "",
-        isActive: true,
-      });
+      const productRes = await addDailyProductClient(payload);
       const product = await productRes.json().catch(() => ({}));
       if (!productRes.ok || !product?.id) {
         throw new Error(errorText(product, "ثبت انجام نشد"));

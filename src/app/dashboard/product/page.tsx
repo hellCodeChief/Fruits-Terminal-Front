@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store";
 import {
-  getAllProductClient,
+  getAllDailyProductClient,
   getAllCategoriesClient,
 } from "@/components/utils/actionsClient";
 import ProductShowTable from "./components/show-table";
 
 export default function AdminProductPage() {
-  const [allProducts, setAllProducts] = useState([]);
-  const [allCategories, setAllCategories] = useState([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allCategories, setAllCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // گرفتن اطلاعات کاربر از استور
@@ -29,7 +29,8 @@ export default function AdminProductPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const products = await getAllProductClient();
+      // ✅ فهرست حجره از dailyProduct؛ کاتالوگ product برای بعد می‌ماند
+      const products = await getAllDailyProductClient();
       const categories = await getAllCategoriesClient();
 
       setAllProducts(Array.isArray(products) ? products : []);

@@ -61,7 +61,14 @@ export default function PublicNav() {
                 <Button
                   block
                   type={active ? "primary" : "text"}
-                  style={{ height: "auto", paddingTop: 10, paddingBottom: 10 }}
+                  className="!rounded-none"
+                  // ✅ جعبه آیکون گوشه‌تیز
+                  style={{
+                    height: "auto",
+                    paddingTop: 10,
+                    paddingBottom: 10,
+                    borderRadius: 0,
+                  }}
                 >
                   <span
                     style={{
