@@ -35,7 +35,7 @@ export default function PublicNav() {
 
   return (
     <>
-      <nav className="relative hidden w-full flex-wrap gap-2 bg-light-surface p-2 lg:flex">
+      <nav className="relative z-[60] hidden w-full flex-wrap gap-2 bg-light-surface p-2 lg:flex">
         {/* ✅ همان ربع‌دایره، چسبیده به گوشه راست این ردیف */}
         <AdminCorner />
         {items.map((item) => {
