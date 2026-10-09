@@ -56,13 +56,6 @@ const UserDropdown = () => {
 
   const items: MenuProps["items"] = [];
 
-  if (isGodUser || hasPermission(userPermission, "product:read")) {
-    items.push({
-      key: "addProduct",
-      label: <Link href="/dashboard/product">افزودن محصول</Link>,
-    });
-  }
-
   if (isGodUser || hasPermission(userPermission, "category:read")) {
     items.push({
       key: "addCategory",

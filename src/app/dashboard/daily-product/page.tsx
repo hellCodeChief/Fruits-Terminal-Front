@@ -4,15 +4,15 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store";
 import {
-  getAllProductClient,
+  getAllDailyProductClient,
   getAllCategoriesClient,
 } from "@/components/utils/actionsClient";
 import ProductShowTable from "./components/show-table";
 
-function canOpenProduct(isGodUser: boolean, permissions: { name: string }[]) {
+function canOpenDaily(isGodUser: boolean, permissions: { name: string }[]) {
   return (
     isGodUser ||
-    permissions.some((item) => item.name === "product:read" || item.name === "product:create")
+    permissions.some((item) => item.name === "dailyProduct:read" || item.name === "dailyProduct:create")
   );
 }
 
@@ -36,7 +36,8 @@ export default function AdminProductPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const products = await getAllProductClient();
+      // ✅ فهرست حجره از dailyProduct؛ کاتالوگ product برای بعد می‌ماند
+      const products = await getAllDailyProductClient();
       const categories = await getAllCategoriesClient();
 
       setAllProducts(Array.isArray(products) ? products : []);
@@ -49,8 +50,8 @@ export default function AdminProductPage() {
 
   if (loading) return <div>در حال بارگذاری محصولات...</div>;
 
-  // ✅ مجوز product:read مسیر داشبورد محصول را باز می‌کند
-  if (!canOpenProduct(isGodUser, userPermission)) {
+  // ✅ همان الگوی محصول: بدون مجوز خواندن، مسیر داشبورد حجره باز نمی‌شود
+  if (!canOpenDaily(isGodUser, userPermission)) {
     return <div>به این صفحه دسترسی ندارید</div>;
   }
 

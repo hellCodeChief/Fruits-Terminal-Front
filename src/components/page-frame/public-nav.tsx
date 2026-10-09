@@ -13,6 +13,7 @@ import {
 import { Button, theme } from "antd";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AdminCorner from "./admin-corner";
 
 const items = [
   { label: "خانه", href: "/", icon: HomeOutlined, activeIcon: HomeFilled },
@@ -34,7 +35,9 @@ export default function PublicNav() {
 
   return (
     <>
-      <nav className="hidden w-full flex-wrap gap-2 bg-light-surface p-2 lg:flex">
+      <nav className="relative hidden w-full flex-wrap gap-2 bg-light-surface p-2 lg:flex">
+        {/* ✅ همان ربع‌دایره، چسبیده به گوشه راست این ردیف */}
+        <AdminCorner />
         {items.map((item) => {
           const active = itemIsActive(item.href, pathname);
           return (
@@ -52,6 +55,7 @@ export default function PublicNav() {
         className="fixed inset-x-0 bottom-0 z-40 w-full bg-light-surface lg:hidden"
         style={{ boxShadow: token.boxShadowSecondary }}
       >
+        <AdminCorner />
         <div className="flex w-full">
           {items.map((item) => {
             const active = itemIsActive(item.href, pathname);

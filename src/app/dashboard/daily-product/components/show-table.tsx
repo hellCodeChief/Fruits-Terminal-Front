@@ -4,12 +4,12 @@ import { Button, message, Popconfirm, Table } from "antd";
 import type { TableProps } from "antd";
 import { useEffect, useState } from "react";
 import {
-  getAllProductClient,
-  softDeleteProductClient,
-  hardDeleteProductClient,
+  getAllDailyProductClient,
+  softDeleteDailyProductClient,
+  hardDeleteDailyProductClient,
 } from "@/components/utils/actionsClient";
 import DailyProductCard from "@/components/daily-product-card/daily-product-card";
-import AddProductModal from "./add/product-modal";
+import AddProductModal from "./daily-modal";
 
 interface DataType {
   id: number;
@@ -21,14 +21,14 @@ interface DataType {
   createdAt?: string;
   childCategories: any[];
   parentCategories: any[];
-  files?: { id: number }[];
+  files?: { id: number; usage?: string }[];
   variants?: {
     id?: number;
     price?: number | string;
     createdAt?: string;
     desc?: string;
     minOrder?: number | string | null;
-    files?: { id: number }[];
+    files?: { id: number; usage?: string }[];
   }[];
 }
 
@@ -79,7 +79,7 @@ function minOrderText(record: DataType) {
 }
 
 // ✅ جدیدترین فایل؛ عکس تازه‌آپلودشده جای عکس قبلی را می‌گیرد
-function newestFile(files?: { id: number }[]) {
+function newestFile(files?: { id: number; usage?: string }[]) {
   if (!files?.length) return null;
   return files.reduce((best, file) => (file.id > best.id ? file : best));
 }
@@ -88,7 +88,7 @@ function productImage(record: DataType) {
   const variantFile = newestFile(latestVariant(record)?.files);
   const file = variantFile || newestFile(record.files);
   if (!file) return null;
-  const usage = variantFile ? "product-variant" : "product";
+  const usage = file.usage || "daily-product";
   return `${BASE_URL}/files/${file.id}/${usage}`;
 }
 
@@ -118,7 +118,7 @@ export default function ProductShowTable({
   const [time, setTime] = useState(Date.now());
 
   const refetchProduct = async () => {
-    const res = await getAllProductClient();
+    const res = await getAllDailyProductClient();
     setData(newestFirst(res));
   };
 
@@ -138,9 +138,9 @@ export default function ProductShowTable({
 
   const handleSoftDeleteProduct = async (_id: number) => {
     try {
-      await softDeleteProductClient(_id);
+      await softDeleteDailyProductClient(_id);
       message.success("محصول با موفقیت حذف شد");
-      const updated = await getAllProductClient();
+      const updated = await getAllDailyProductClient();
       setData(newestFirst(updated));
     } catch (error) {
       console.error("خطا در حذف نرم:", error);
@@ -149,9 +149,9 @@ export default function ProductShowTable({
 
   const handleHardDeleteProduct = async (_id: number) => {
     try {
-      await hardDeleteProductClient(_id);
+      await hardDeleteDailyProductClient(_id);
       message.success("محصول به صورت دائم حذف شد");
-      const updated = await getAllProductClient();
+      const updated = await getAllDailyProductClient();
       setData(newestFirst(updated));
     } catch (error) {
       console.error("خطا در حذف سخت:", error);
@@ -233,7 +233,7 @@ export default function ProductShowTable({
             okText="بله"
             cancelText="خیر"
           >
-            <Button disabled={!hasPermission("product:soft-delete")}>
+            <Button disabled={!hasPermission("dailyProduct:soft-delete")}>
               حذف نرم
             </Button>
           </Popconfirm>
@@ -244,7 +244,7 @@ export default function ProductShowTable({
             okText="بله"
             cancelText="خیر"
           >
-            <Button danger disabled={!hasPermission("product:hard-delete")}>
+            <Button danger disabled={!hasPermission("dailyProduct:hard-delete")}>
               حذف سخت
             </Button>
           </Popconfirm>
@@ -260,7 +260,7 @@ export default function ProductShowTable({
         <Button
           type="primary"
           onClick={handleAddClick}
-          disabled={!hasPermission("product:create")}
+          disabled={!hasPermission("dailyProduct:create")}
           className="whitespace-nowrap"
         >
           افزودن محصول
@@ -296,7 +296,7 @@ export default function ProductShowTable({
                   okText="بله"
                   cancelText="خیر"
                 >
-                  <Button disabled={!hasPermission("product:soft-delete")}>
+                  <Button disabled={!hasPermission("dailyProduct:soft-delete")}>
                     حذف نرم
                   </Button>
                 </Popconfirm>
@@ -306,7 +306,7 @@ export default function ProductShowTable({
                   okText="بله"
                   cancelText="خیر"
                 >
-                  <Button danger disabled={!hasPermission("product:hard-delete")}>
+                  <Button danger disabled={!hasPermission("dailyProduct:hard-delete")}>
                     حذف سخت
                   </Button>
                 </Popconfirm>

@@ -1,9 +1,9 @@
 "use client";
 
 import { Modal } from "antd";
-import ProductAdd from "../product-add";
+import SimpleAdd from "../../product/components/simple-add";
 
-const AddProductModalApp = ({
+const DailyProductModal = ({
   allCategories,
   products,
   refetchProduct,
@@ -14,7 +14,7 @@ const AddProductModalApp = ({
 }: any) => {
   return (
     <Modal
-      title={isEdit ? "ویرایش محصول" : "افزودن محصول"}
+      title={isEdit ? "ویرایش حجره" : "افزودن حجره"}
       open={open}
       centered
       width="calc(100% - 2rem)"
@@ -26,9 +26,8 @@ const AddProductModalApp = ({
       footer={null}
       destroyOnClose
     >
-      {/* ✅ کارت وسط صفحه؛ اگر فرم بلند است داخل خودش اسکرول می‌شود */}
-      {/* ✅ ویرایش کاتالوگ همان فرم محصول است و به dailyProduct نمی‌رود */}
-      <ProductAdd
+      {/* ✅ این فرم فقط dailyProduct را می‌نویسد */}
+      <SimpleAdd
         categories={allCategories}
         products={products}
         editing={isEdit ? editProductData : null}
@@ -41,4 +40,4 @@ const AddProductModalApp = ({
   );
 };
 
-export default AddProductModalApp;
+export default DailyProductModal;
