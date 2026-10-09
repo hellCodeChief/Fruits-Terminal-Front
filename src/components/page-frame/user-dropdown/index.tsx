@@ -56,6 +56,21 @@ const UserDropdown = () => {
 
   const items: MenuProps["items"] = [];
 
+  // ✅ هر لینک فقط با مجوز ساخت همان جدول
+  if (isGodUser || hasPermission(userPermission, "product:create")) {
+    items.push({
+      key: "addProduct",
+      label: <Link href="/dashboard/product">افزودن محصول</Link>,
+    });
+  }
+
+  if (isGodUser || hasPermission(userPermission, "dailyProduct:create")) {
+    items.push({
+      key: "addDailyProduct",
+      label: <Link href="/dashboard/daily-product">افزودن محصول روز</Link>,
+    });
+  }
+
   if (isGodUser || hasPermission(userPermission, "category:read")) {
     items.push({
       key: "addCategory",
