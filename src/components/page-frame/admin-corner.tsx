@@ -28,7 +28,7 @@ export default function AdminCorner() {
   const canDaily = god || names.has("dailyProduct:create");
 
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [box, setBox] = useState<{ width: number; height: number } | null>(null);
+  const [side, setSide] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     const home = buttonRef.current?.closest("nav")?.querySelector("a button");
@@ -36,7 +36,12 @@ export default function AdminCorner() {
     const apply = () => {
       const rect = home.getBoundingClientRect();
       if (rect.width < 1 || rect.height < 1) return;
-      setBox({ width: rect.width, height: rect.height });
+      // ✅ دو ضلع برابر. دکمه آیکون: ضلع بلندتر خانه. دکمه کشیده دسکتاپ همان ارتفاع را بزرگ می‌کند
+      const iconTile = rect.width <= rect.height * 1.75;
+      const side = iconTile
+        ? Math.max(rect.width, rect.height)
+        : Math.max(rect.height * 2, 64);
+      setSide(side);
     };
     apply();
     const observer = new ResizeObserver(apply);
@@ -64,17 +69,24 @@ export default function AdminCorner() {
     });
   }
 
+  const length = side ?? 56;
+  const icon = 24;
+  // مرکز جرم ربع‌دایره‌ای که گوشه‌اش پایین-راست است
+  const inset = (4 * length) / (3 * Math.PI) - icon / 2;
+
   return (
     <Dropdown menu={{ items }} placement="topRight" trigger={["click"]} overlayClassName="z-[9999]">
       <button
         ref={buttonRef}
         type="button"
         aria-label="مدیریت"
-        // ✅ هم‌اندازه دکمه خانه؛ ربع بالا-چپ و گوشه راست نوار
-        className="absolute right-0 top-0 z-50 flex h-14 w-14 -translate-y-full items-end justify-end rounded-tl-full bg-light-primary pe-3 pb-3 text-white"
-        style={box ? { width: box.width, height: box.height } : undefined}
+        className="absolute right-0 top-0 z-50 h-14 w-14 -translate-y-full rounded-tl-full border-b-2 border-solid border-light-surface bg-light-primary text-white"
+        style={{ width: length, height: length }}
       >
-        <AppstoreOutlined style={{ fontSize: 24 }} />
+        <AppstoreOutlined
+          className="absolute"
+          style={{ right: inset, bottom: inset, fontSize: icon }}
+        />
       </button>
     </Dropdown>
   );
