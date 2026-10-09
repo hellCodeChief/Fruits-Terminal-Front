@@ -47,9 +47,13 @@ export default function AdminCorner() {
       <button
         type="button"
         aria-label="مدیریت"
-        className="absolute right-0 top-0 z-50 flex aspect-square w-1/4 -translate-y-full items-center justify-center rounded-tl-full border-b-2 border-solid border-light-surface bg-light-primary text-white"
+        className="absolute right-0 top-0 z-50 grid aspect-square w-1/4 -translate-y-full grid-cols-2 grid-rows-2 overflow-hidden rounded-tl-full border-b-2 border-solid border-light-surface bg-light-primary p-0 text-white"
       >
-        <AppstoreOutlined className="text-2xl" />
+        {/* ✅ آیکون و برچسب وسط ربع پر، مثل دکمه‌های نوار */}
+        <span className="col-start-2 row-start-2 flex flex-col items-center justify-center gap-1.5 text-[13px] leading-[1.2]">
+          <AppstoreOutlined className="text-2xl" />
+          مدیریت
+        </span>
       </button>
     </Dropdown>
   );
