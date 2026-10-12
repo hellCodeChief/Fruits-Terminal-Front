@@ -18,32 +18,81 @@ function isGod(user: any) {
   );
 }
 
-// ✅ ربع‌دایره گوشه نوار؛ فقط برای رفتن به دو داشبورد
+function menuLink(href: string, text: string) {
+  return (
+    <Link href={href} className="block w-full px-2 py-1">
+      {text}
+    </Link>
+  );
+}
+
+// ✅ ربع‌دایره گوشه نوار؛ لینک‌های پنل کاربر هم اینجاست
 export default function AdminCorner() {
   const user = useSelector((state: RootState) => state.user.userInfo);
   const names = permissionNames(user);
   const god = isGod(user);
-  const canProduct = god || names.has("product:create");
-  const canDaily = god || names.has("dailyProduct:create");
-
-  if (!canProduct && !canDaily) return null;
 
   const items = [];
-  if (canProduct) {
+  if (god || names.has("product:create")) {
     items.push({
       key: "product",
-      label: <Link href="/dashboard/product">محصولات</Link>,
+      label: menuLink("/dashboard/product", "محصولات"),
+    });
+    items.push({
+      key: "addProduct",
+      label: menuLink("/dashboard/product", "افزودن محصول"),
     });
   }
-  if (canDaily) {
+  if (god || names.has("dailyProduct:create")) {
     items.push({
       key: "daily",
-      label: <Link href="/dashboard/daily-product">حجره</Link>,
+      label: menuLink("/dashboard/daily-product", "حجره"),
+    });
+    items.push({
+      key: "addDailyProduct",
+      label: menuLink("/dashboard/daily-product", "افزودن محصول روز"),
+    });
+  }
+  if (god || names.has("category:read")) {
+    items.push({
+      key: "addCategory",
+      label: menuLink("/dashboard/category", "افزودن دسته بندی"),
+    });
+  }
+  if (god || names.has("property:read")) {
+    items.push({
+      key: "addProperty",
+      label: menuLink("/dashboard/property", "افزودن ویژگی"),
+    });
+  }
+  if (god || names.has("role:create")) {
+    items.push({
+      key: "addRole",
+      label: menuLink("/dashboard/role", "افزودن نقش"),
+    });
+  }
+  if (god || names.has("user:role-assign")) {
+    items.push({
+      key: "addUserRole",
+      label: menuLink("/dashboard/user", "کاربران"),
     });
   }
 
+  if (!items.length) return null;
+
   return (
-    <Dropdown menu={{ items }} placement="topRight" trigger={["click"]} overlayClassName="z-[9999]">
+    <Dropdown
+      menu={{ items }}
+      placement="topRight"
+      trigger={["click"]}
+      overlayClassName="z-[9999]"
+      // ✅ فهرست گوشه جمع‌وجورتر از منوی کاربر هدر و چسبیده به ربع‌دایره
+      dropdownRender={(menu) => (
+        <div className="mb-2 w-44 rounded-2xl rounded-br-none border border-solid border-light-primary bg-light-surface p-2 shadow-md [&_.ant-dropdown-menu]:!m-0 [&_.ant-dropdown-menu]:!min-w-0 [&_.ant-dropdown-menu]:!w-full [&_.ant-dropdown-menu]:!bg-transparent [&_.ant-dropdown-menu]:!p-0 [&_.ant-dropdown-menu]:!shadow-none [&_.ant-dropdown-menu-item]:!p-0">
+          {menu}
+        </div>
+      )}
+    >
       <button
         type="button"
         aria-label="مدیریت"

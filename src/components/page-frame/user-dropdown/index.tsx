@@ -40,65 +40,7 @@ const UserDropdown = () => {
     );
   }
 
-  // -------------------------
-  // اگر کاربر لاگین شده بود
-  // -------------------------
-  const userPermission = user?.roles?.[0]?.permissions || [];
-
-  const isGodUser =
-    user?.email?.toLowerCase() ===
-      process.env.NEXT_PUBLIC_GOD_ADMIN_GMAIL?.toLowerCase() &&
-    user?.phone?.trim() === process.env.NEXT_PUBLIC_GOD_ADMIN_NUMBER?.trim();
-
-  function hasPermission(permissions: { name: string }[], target: string) {
-    return permissions.some((p) => p.name === target);
-  }
-
-  const items: MenuProps["items"] = [];
-
-  // ✅ هر لینک فقط با مجوز ساخت همان جدول
-  if (isGodUser || hasPermission(userPermission, "product:create")) {
-    items.push({
-      key: "addProduct",
-      label: <Link href="/dashboard/product">افزودن محصول</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "dailyProduct:create")) {
-    items.push({
-      key: "addDailyProduct",
-      label: <Link href="/dashboard/daily-product">افزودن محصول روز</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "category:read")) {
-    items.push({
-      key: "addCategory",
-      label: <Link href="/dashboard/category">افزودن دسته بندی</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "property:read")) {
-    items.push({
-      key: "addProperty",
-      label: <Link href="/dashboard/property">افزودن ویژگی</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "role:create")) {
-    items.push({
-      key: "addRole",
-      label: <Link href="/dashboard/role">افزودن نقش</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "user:role-assign")) {
-    items.push({
-      key: "addUserRole",
-      label: <Link href="/dashboard/user">کاربران</Link>,
-    });
-  }
-
+  // ✅ پنل کاربر فقط خروج؛ بقیه لینک‌ها روی دکمه مدیریت هستند
   const logoutHandler = async () => {
     try {
       await logoutRequest(); // صدا زدن API بک
@@ -120,14 +62,16 @@ const UserDropdown = () => {
     }
   };
 
-  items.push({
-    key: "logout",
-    label: (
-      <button className="w-full text-right" onClick={logoutHandler}>
-        خروج
-      </button>
-    ),
-  });
+  const items: MenuProps["items"] = [
+    {
+      key: "logout",
+      label: (
+        <button className="w-full text-right" onClick={logoutHandler}>
+          خروج
+        </button>
+      ),
+    },
+  ];
 
   return (
     <Dropdown
