@@ -26,7 +26,7 @@ function itemIsActive(href: string, pathname: string) {
   return pathname === href;
 }
 
-// ✅ زیر lg نوار پایین؛ از lg به بعد همان دکمه‌های زیر هدر. داخل داشبورد نیست
+// ✅ زیر lg نوار پایین و ربع‌دایره؛ از lg به بعد فقط دکمه‌های زیر هدر
 export default function PublicNav() {
   const pathname = usePathname();
   const { token } = theme.useToken();
@@ -36,8 +36,6 @@ export default function PublicNav() {
   return (
     <>
       <nav className="relative z-[60] hidden w-full flex-wrap gap-2 bg-light-surface p-2 lg:flex">
-        {/* ✅ همان ربع‌دایره، چسبیده به گوشه راست این ردیف */}
-        <AdminCorner />
         {items.map((item) => {
           const active = itemIsActive(item.href, pathname);
           return (

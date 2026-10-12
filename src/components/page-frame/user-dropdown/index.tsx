@@ -40,7 +40,13 @@ const UserDropdown = () => {
     );
   }
 
-  // ✅ پنل کاربر فقط خروج؛ بقیه لینک‌ها روی دکمه مدیریت هستند
+  // ✅ زیر lg فقط خروج؛ از lg به بعد همان لینک‌های مدیریت اینجاست
+  const userPermission = user?.roles?.[0]?.permissions || [];
+  const isGodUser =
+    user?.email?.toLowerCase() === process.env.NEXT_PUBLIC_GOD_ADMIN_GMAIL?.toLowerCase() &&
+    user?.phone?.trim() === process.env.NEXT_PUBLIC_GOD_ADMIN_NUMBER?.trim();
+  const can = (name: string) => isGodUser || userPermission.some((item: { name: string }) => item.name === name);
+
   const logoutHandler = async () => {
     try {
       await logoutRequest(); // صدا زدن API بک
@@ -62,16 +68,57 @@ const UserDropdown = () => {
     }
   };
 
-  const items: MenuProps["items"] = [
-    {
-      key: "logout",
-      label: (
-        <button className="w-full text-right" onClick={logoutHandler}>
-          خروج
-        </button>
-      ),
-    },
-  ];
+  const items: MenuProps["items"] = [];
+  if (can("product:create")) {
+    items.push({
+      key: "addProduct",
+      className: "max-lg:hidden",
+      label: <Link href="/dashboard/product">product</Link>,
+    });
+  }
+  if (can("dailyProduct:create")) {
+    items.push({
+      key: "addDailyProduct",
+      className: "max-lg:hidden",
+      label: <Link href="/dashboard/daily-product">daily product</Link>,
+    });
+  }
+  if (can("category:read")) {
+    items.push({
+      key: "addCategory",
+      className: "max-lg:hidden",
+      label: <Link href="/dashboard/category">افزودن دسته بندی</Link>,
+    });
+  }
+  if (can("property:read")) {
+    items.push({
+      key: "addProperty",
+      className: "max-lg:hidden",
+      label: <Link href="/dashboard/property">افزودن ویژگی</Link>,
+    });
+  }
+  if (can("role:create")) {
+    items.push({
+      key: "addRole",
+      className: "max-lg:hidden",
+      label: <Link href="/dashboard/role">افزودن نقش</Link>,
+    });
+  }
+  if (can("user:role-assign")) {
+    items.push({
+      key: "addUserRole",
+      className: "max-lg:hidden",
+      label: <Link href="/dashboard/user">کاربران</Link>,
+    });
+  }
+  items.push({
+    key: "logout",
+    label: (
+      <button className="w-full text-right" onClick={logoutHandler}>
+        خروج
+      </button>
+    ),
+  });
 
   return (
     <Dropdown

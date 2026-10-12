@@ -20,13 +20,13 @@ function isGod(user: any) {
 
 function menuLink(href: string, text: string) {
   return (
-    <Link href={href} className="block w-full px-2 py-1">
+    <Link href={href} className="block w-full px-3 py-3">
       {text}
     </Link>
   );
 }
 
-// ✅ ربع‌دایره گوشه نوار؛ لینک‌های پنل کاربر هم اینجاست
+// ✅ زیر lg ربع‌دایره؛ از lg به بعد لینک‌ها در منوی کاربر هدر هستند
 export default function AdminCorner() {
   const user = useSelector((state: RootState) => state.user.userInfo);
   const names = permissionNames(user);
@@ -35,22 +35,14 @@ export default function AdminCorner() {
   const items = [];
   if (god || names.has("product:create")) {
     items.push({
-      key: "product",
-      label: menuLink("/dashboard/product", "محصولات"),
-    });
-    items.push({
       key: "addProduct",
-      label: menuLink("/dashboard/product", "افزودن محصول"),
+      label: menuLink("/dashboard/product", "product"),
     });
   }
   if (god || names.has("dailyProduct:create")) {
     items.push({
-      key: "daily",
-      label: menuLink("/dashboard/daily-product", "حجره"),
-    });
-    items.push({
       key: "addDailyProduct",
-      label: menuLink("/dashboard/daily-product", "افزودن محصول روز"),
+      label: menuLink("/dashboard/daily-product", "daily product"),
     });
   }
   if (god || names.has("category:read")) {
@@ -83,12 +75,13 @@ export default function AdminCorner() {
   return (
     <Dropdown
       menu={{ items }}
-      placement="topRight"
+      placement="bottomRight"
+      autoAdjustOverflow={false}
       trigger={["click"]}
       overlayClassName="z-[9999]"
-      // ✅ فهرست گوشه جمع‌وجورتر از منوی کاربر هدر و چسبیده به ربع‌دایره
+      // ✅ فهرست کمی پایین‌تر از دکمه؛ فاصله بیشتر بین گزینه‌ها
       dropdownRender={(menu) => (
-        <div className="mb-2 w-44 rounded-2xl rounded-br-none border border-solid border-light-primary bg-light-surface p-2 shadow-md [&_.ant-dropdown-menu]:!m-0 [&_.ant-dropdown-menu]:!min-w-0 [&_.ant-dropdown-menu]:!w-full [&_.ant-dropdown-menu]:!bg-transparent [&_.ant-dropdown-menu]:!p-0 [&_.ant-dropdown-menu]:!shadow-none [&_.ant-dropdown-menu-item]:!p-0">
+        <div className="mt-3 w-44 rounded-2xl rounded-br-none border border-solid border-light-primary bg-light-surface p-2 shadow-md [&_.ant-dropdown-menu]:!m-0 [&_.ant-dropdown-menu]:!flex [&_.ant-dropdown-menu]:!min-w-0 [&_.ant-dropdown-menu]:!w-full [&_.ant-dropdown-menu]:!flex-col [&_.ant-dropdown-menu]:!gap-3 [&_.ant-dropdown-menu]:!bg-transparent [&_.ant-dropdown-menu]:!p-0 [&_.ant-dropdown-menu]:!shadow-none [&_.ant-dropdown-menu-item]:!p-0">
           {menu}
         </div>
       )}
@@ -96,7 +89,7 @@ export default function AdminCorner() {
       <button
         type="button"
         aria-label="مدیریت"
-        className="absolute right-0 top-0 z-50 flex aspect-square w-1/4 -translate-y-full flex-col items-center justify-center gap-1.5 overflow-hidden rounded-tl-full border-b-2 border-solid border-light-surface bg-light-primary p-0 text-[13px] leading-[1.2] text-white"
+        className="absolute right-0 top-0 z-50 flex aspect-square w-1/4 -translate-y-full flex-col items-center justify-center gap-1.5 overflow-hidden rounded-tl-full border-b-2 border-solid border-light-surface bg-light-primary p-0 text-[13px] leading-[1.2] text-white lg:hidden"
       >
         {/* ✅ آیکون و برچسب وسط ربع، مثل دکمه‌های نوار */}
         <AppstoreOutlined className="text-2xl" />
