@@ -26,7 +26,7 @@ function itemIsActive(href: string, pathname: string) {
   return pathname === href;
 }
 
-// ✅ زیر lg نوار پایین و ربع‌دایره، حتی داخل داشبورد؛ از lg به بعد فقط دکمه‌های زیر هدر
+// ✅ زیر lg نوار پایین و دایره مدیریت، حتی داخل داشبورد؛ از lg به بعد فقط دکمه‌های زیر هدر
 export default function PublicNav() {
   const pathname = usePathname();
   const { token } = theme.useToken();

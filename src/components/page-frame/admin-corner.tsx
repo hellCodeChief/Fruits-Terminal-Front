@@ -18,81 +18,61 @@ function isGod(user: any) {
   );
 }
 
-function menuLink(href: string, text: string) {
-  return (
-    <Link href={href} className="block w-full px-3 py-3">
-      {text}
-    </Link>
-  );
-}
-
-// ✅ زیر lg ربع‌دایره؛ از lg به بعد لینک‌ها در منوی کاربر هدر هستند
+// ✅ زیر lg دایره روی نوار؛ از lg به بعد لینک‌ها در منوی کاربر هدر هستند
 export default function AdminCorner() {
   const user = useSelector((state: RootState) => state.user.userInfo);
   const names = permissionNames(user);
   const god = isGod(user);
 
-  const items = [];
+  const links: { key: string; href: string; label: string }[] = [];
   // ✅ افزودن بار اول فهرست است
   if (god || names.has("dailyProduct:create")) {
-    items.push({
-      key: "addDailyProduct",
-      label: menuLink("/dashboard/daily-product", "افزودن بار"),
-    });
+    links.push({ key: "addDailyProduct", href: "/dashboard/daily-product", label: "افزودن بار" });
   }
   if (god || names.has("product:create")) {
-    items.push({
-      key: "addProduct",
-      label: menuLink("/dashboard/product", "افزودن محصول"),
-    });
+    links.push({ key: "addProduct", href: "/dashboard/product", label: "افزودن محصول" });
   }
   if (god || names.has("category:read")) {
-    items.push({
-      key: "addCategory",
-      label: menuLink("/dashboard/category", "افزودن دسته بندی"),
-    });
+    links.push({ key: "addCategory", href: "/dashboard/category", label: "افزودن دسته بندی" });
   }
   if (god || names.has("property:read")) {
-    items.push({
-      key: "addProperty",
-      label: menuLink("/dashboard/property", "افزودن ویژگی"),
-    });
+    links.push({ key: "addProperty", href: "/dashboard/property", label: "افزودن ویژگی" });
   }
   if (god || names.has("role:create")) {
-    items.push({
-      key: "addRole",
-      label: menuLink("/dashboard/role", "افزودن نقش"),
-    });
+    links.push({ key: "addRole", href: "/dashboard/role", label: "افزودن نقش" });
   }
   if (god || names.has("user:role-assign")) {
-    items.push({
-      key: "addUserRole",
-      label: menuLink("/dashboard/user", "کاربران"),
-    });
+    links.push({ key: "addUserRole", href: "/dashboard/user", label: "کاربران" });
   }
 
-  if (!items.length) return null;
+  if (!links.length) return null;
 
   return (
     <Dropdown
-      menu={{ items }}
-      placement="bottomRight"
-      autoAdjustOverflow={false}
       trigger={["click"]}
-      overlayClassName="z-[9999]"
-      // ✅ فهرست کمی پایین‌تر از دکمه؛ فاصله بیشتر بین گزینه‌ها
-      dropdownRender={(menu) => (
-        <div className="mt-3 w-44 -translate-y-[calc(100%-3rem)] rounded-2xl rounded-br-none border border-solid border-light-primary bg-light-surface p-2 shadow-md [&_.ant-dropdown-menu]:!m-0 [&_.ant-dropdown-menu]:!flex [&_.ant-dropdown-menu]:!min-w-0 [&_.ant-dropdown-menu]:!w-full [&_.ant-dropdown-menu]:!flex-col [&_.ant-dropdown-menu]:!gap-3 [&_.ant-dropdown-menu]:!bg-transparent [&_.ant-dropdown-menu]:!p-0 [&_.ant-dropdown-menu]:!shadow-none [&_.ant-dropdown-menu-item]:!p-0">
-          {menu}
+      placement="topRight"
+      overlayClassName="z-[9999] !bg-transparent !p-0 !shadow-none"
+      // ✅ هر گزینه کارت جدا بالای دایره است، نه یک پنل به‌هم‌چسبیده
+      dropdownRender={() => (
+        <div className="mb-3 flex flex-col items-end gap-3">
+          {links.map((item) => (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="rounded-2xl bg-light-surface px-4 py-3 text-sm text-neutral-800 shadow-md"
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       )}
     >
       <button
         type="button"
         aria-label="مدیریت"
-        className="absolute right-0 top-0 z-50 flex aspect-square w-1/4 -translate-y-full flex-col items-center justify-center gap-1.5 overflow-hidden rounded-tl-full border-b-2 border-solid border-light-surface bg-light-primary p-0 text-[13px] leading-[1.2] text-white lg:hidden"
+        className="absolute right-2 top-0 z-50 flex h-20 w-20 -translate-y-[85%] flex-col items-center justify-center gap-0.5 rounded-full bg-light-primary p-0 text-[13px] leading-tight text-white shadow-md lg:hidden"
       >
-        {/* ✅ آیکون و برچسب وسط ربع، مثل دکمه‌های نوار */}
+        {/* ✅ دایره کامل، نشسته روی گوشه راست نوار */}
         <AppstoreOutlined className="text-2xl" />
         مدیریت
       </button>
