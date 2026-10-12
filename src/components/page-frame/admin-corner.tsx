@@ -81,7 +81,7 @@ export default function AdminCorner() {
       overlayClassName="z-[9999]"
       // ✅ فهرست کمی پایین‌تر از دکمه؛ فاصله بیشتر بین گزینه‌ها
       dropdownRender={(menu) => (
-        <div className="mt-3 w-44 rounded-2xl rounded-br-none border border-solid border-light-primary bg-light-surface p-2 shadow-md [&_.ant-dropdown-menu]:!m-0 [&_.ant-dropdown-menu]:!flex [&_.ant-dropdown-menu]:!min-w-0 [&_.ant-dropdown-menu]:!w-full [&_.ant-dropdown-menu]:!flex-col [&_.ant-dropdown-menu]:!gap-3 [&_.ant-dropdown-menu]:!bg-transparent [&_.ant-dropdown-menu]:!p-0 [&_.ant-dropdown-menu]:!shadow-none [&_.ant-dropdown-menu-item]:!p-0">
+        <div className="mt-3 w-44 -translate-y-[calc(100%-3rem)] rounded-2xl rounded-br-none border border-solid border-light-primary bg-light-surface p-2 shadow-md [&_.ant-dropdown-menu]:!m-0 [&_.ant-dropdown-menu]:!flex [&_.ant-dropdown-menu]:!min-w-0 [&_.ant-dropdown-menu]:!w-full [&_.ant-dropdown-menu]:!flex-col [&_.ant-dropdown-menu]:!gap-3 [&_.ant-dropdown-menu]:!bg-transparent [&_.ant-dropdown-menu]:!p-0 [&_.ant-dropdown-menu]:!shadow-none [&_.ant-dropdown-menu-item]:!p-0">
           {menu}
         </div>
       )}

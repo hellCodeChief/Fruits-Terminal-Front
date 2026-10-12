@@ -8,11 +8,26 @@ import { RootState } from "@/app/store";
 import { logout as logoutRedux } from "@/app/store/user/userSlice";
 import { setBasket } from "@/app/store/basket/basketSlice";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { logoutRequest } from "@/components/utils/actionsClient";
 
+// ✅ از lg به بعد لینک‌های مدیریت به منوی کاربر برمی‌گردند
+function useFromLg() {
+  const [fromLg, setFromLg] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setFromLg(query.matches);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+  return fromLg;
+}
+
 const UserDropdown = () => {
   const user = useSelector((state: RootState) => state.user.userInfo);
+  const fromLg = useFromLg();
 
   const dispatch = useDispatch(); // ← اضافه شد
   const router = useRouter(); // ← اضافه شد
@@ -69,45 +84,39 @@ const UserDropdown = () => {
   };
 
   const items: MenuProps["items"] = [];
-  if (can("product:create")) {
+  if (fromLg && can("product:create")) {
     items.push({
       key: "addProduct",
-      className: "max-lg:hidden",
       label: <Link href="/dashboard/product">product</Link>,
     });
   }
-  if (can("dailyProduct:create")) {
+  if (fromLg && can("dailyProduct:create")) {
     items.push({
       key: "addDailyProduct",
-      className: "max-lg:hidden",
       label: <Link href="/dashboard/daily-product">daily product</Link>,
     });
   }
-  if (can("category:read")) {
+  if (fromLg && can("category:read")) {
     items.push({
       key: "addCategory",
-      className: "max-lg:hidden",
       label: <Link href="/dashboard/category">افزودن دسته بندی</Link>,
     });
   }
-  if (can("property:read")) {
+  if (fromLg && can("property:read")) {
     items.push({
       key: "addProperty",
-      className: "max-lg:hidden",
       label: <Link href="/dashboard/property">افزودن ویژگی</Link>,
     });
   }
-  if (can("role:create")) {
+  if (fromLg && can("role:create")) {
     items.push({
       key: "addRole",
-      className: "max-lg:hidden",
       label: <Link href="/dashboard/role">افزودن نقش</Link>,
     });
   }
-  if (can("user:role-assign")) {
+  if (fromLg && can("user:role-assign")) {
     items.push({
       key: "addUserRole",
-      className: "max-lg:hidden",
       label: <Link href="/dashboard/user">کاربران</Link>,
     });
   }
