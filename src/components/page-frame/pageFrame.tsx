@@ -2,7 +2,6 @@
 import React, { ReactNode } from "react";
 import Menu from "./menu";
 import PublicNav from "./public-nav";
-import AdminCorner from "./admin-corner";
 import { Provider } from "react-redux";
 import { store } from "@/app/store";
 import { usePathname } from "next/navigation";
@@ -26,14 +25,8 @@ export default function PageFrame({ children }: PageFrameProps) {
         <Menu />
         <PublicNav />
         {children}
-        {/* ✅ جای نوار پایین تا محتوا زیر آن نماند */}
-        {publicSite ? <div className="h-24 lg:hidden" /> : null}
-        {/* ✅ داخل داشبورد هم همان ربع‌دایره، فقط زیر lg و چسبیده به پایین */}
-        {publicSite ? null : (
-          <div className="fixed inset-x-0 bottom-0 z-50 h-0 lg:hidden">
-            <AdminCorner />
-          </div>
-        )}
+        {/* ✅ جای نوار پایین تا محتوا زیر آن نماند؛ داشبورد هم همین نوار را دارد */}
+        <div className="h-24 lg:hidden" />
       </Provider>
     </div>
   );

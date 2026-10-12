@@ -26,15 +26,15 @@ function itemIsActive(href: string, pathname: string) {
   return pathname === href;
 }
 
-// ✅ زیر lg نوار پایین و ربع‌دایره؛ از lg به بعد فقط دکمه‌های زیر هدر
+// ✅ زیر lg نوار پایین و ربع‌دایره، حتی داخل داشبورد؛ از lg به بعد فقط دکمه‌های زیر هدر
 export default function PublicNav() {
   const pathname = usePathname();
   const { token } = theme.useToken();
-
-  if (pathname.startsWith("/dashboard")) return null;
+  const onDashboard = pathname.startsWith("/dashboard");
 
   return (
     <>
+      {onDashboard ? null : (
       <nav className="relative z-[60] hidden w-full flex-wrap gap-2 bg-light-surface p-2 lg:flex">
         {items.map((item) => {
           const active = itemIsActive(item.href, pathname);
@@ -47,6 +47,7 @@ export default function PublicNav() {
           );
         })}
       </nav>
+      )}
 
       {/* ✅ تمام‌عرض و چسبیده به پایین؛ بدون گوشه گرد و بدون فاصله از لبه */}
       <nav

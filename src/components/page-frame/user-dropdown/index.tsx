@@ -84,16 +84,17 @@ const UserDropdown = () => {
   };
 
   const items: MenuProps["items"] = [];
-  if (fromLg && can("product:create")) {
-    items.push({
-      key: "addProduct",
-      label: <Link href="/dashboard/product">product</Link>,
-    });
-  }
+  // ✅ افزودن بار اول فهرست است
   if (fromLg && can("dailyProduct:create")) {
     items.push({
       key: "addDailyProduct",
-      label: <Link href="/dashboard/daily-product">daily product</Link>,
+      label: <Link href="/dashboard/daily-product">افزودن بار</Link>,
+    });
+  }
+  if (fromLg && can("product:create")) {
+    items.push({
+      key: "addProduct",
+      label: <Link href="/dashboard/product">افزودن محصول</Link>,
     });
   }
   if (fromLg && can("category:read")) {

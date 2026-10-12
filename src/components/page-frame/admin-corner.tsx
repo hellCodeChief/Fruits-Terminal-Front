@@ -33,16 +33,17 @@ export default function AdminCorner() {
   const god = isGod(user);
 
   const items = [];
-  if (god || names.has("product:create")) {
-    items.push({
-      key: "addProduct",
-      label: menuLink("/dashboard/product", "product"),
-    });
-  }
+  // ✅ افزودن بار اول فهرست است
   if (god || names.has("dailyProduct:create")) {
     items.push({
       key: "addDailyProduct",
-      label: menuLink("/dashboard/daily-product", "daily product"),
+      label: menuLink("/dashboard/daily-product", "افزودن بار"),
+    });
+  }
+  if (god || names.has("product:create")) {
+    items.push({
+      key: "addProduct",
+      label: menuLink("/dashboard/product", "افزودن محصول"),
     });
   }
   if (god || names.has("category:read")) {
