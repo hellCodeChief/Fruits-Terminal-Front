@@ -8,11 +8,26 @@ import { RootState } from "@/app/store";
 import { logout as logoutRedux } from "@/app/store/user/userSlice";
 import { setBasket } from "@/app/store/basket/basketSlice";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { logoutRequest } from "@/components/utils/actionsClient";
 
+// ✅ از lg به بعد لینک‌های مدیریت به منوی کاربر برمی‌گردند
+function useFromLg() {
+  const [fromLg, setFromLg] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setFromLg(query.matches);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+  return fromLg;
+}
+
 const UserDropdown = () => {
   const user = useSelector((state: RootState) => state.user.userInfo);
+  const fromLg = useFromLg();
 
   const dispatch = useDispatch(); // ← اضافه شد
   const router = useRouter(); // ← اضافه شد
@@ -40,56 +55,12 @@ const UserDropdown = () => {
     );
   }
 
-  // -------------------------
-  // اگر کاربر لاگین شده بود
-  // -------------------------
+  // ✅ زیر lg فقط خروج؛ از lg به بعد همان لینک‌های مدیریت اینجاست
   const userPermission = user?.roles?.[0]?.permissions || [];
-
   const isGodUser =
-    user?.email?.toLowerCase() ===
-      process.env.NEXT_PUBLIC_GOD_ADMIN_GMAIL?.toLowerCase() &&
+    user?.email?.toLowerCase() === process.env.NEXT_PUBLIC_GOD_ADMIN_GMAIL?.toLowerCase() &&
     user?.phone?.trim() === process.env.NEXT_PUBLIC_GOD_ADMIN_NUMBER?.trim();
-
-  function hasPermission(permissions: { name: string }[], target: string) {
-    return permissions.some((p) => p.name === target);
-  }
-
-  const items: MenuProps["items"] = [];
-
-  if (isGodUser || hasPermission(userPermission, "product:read")) {
-    items.push({
-      key: "addProduct",
-      label: <Link href="/dashboard/product">افزودن محصول</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "category:read")) {
-    items.push({
-      key: "addCategory",
-      label: <Link href="/dashboard/category">افزودن دسته بندی</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "property:read")) {
-    items.push({
-      key: "addProperty",
-      label: <Link href="/dashboard/property">افزودن ویژگی</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "role:create")) {
-    items.push({
-      key: "addRole",
-      label: <Link href="/dashboard/role">افزودن نقش</Link>,
-    });
-  }
-
-  if (isGodUser || hasPermission(userPermission, "user:role-assign")) {
-    items.push({
-      key: "addUserRole",
-      label: <Link href="/dashboard/user">کاربران</Link>,
-    });
-  }
+  const can = (name: string) => isGodUser || userPermission.some((item: { name: string }) => item.name === name);
 
   const logoutHandler = async () => {
     try {
@@ -112,6 +83,44 @@ const UserDropdown = () => {
     }
   };
 
+  const items: MenuProps["items"] = [];
+  // ✅ افزودن بار اول فهرست است
+  if (fromLg && can("dailyProduct:create")) {
+    items.push({
+      key: "addDailyProduct",
+      label: <Link href="/dashboard/daily-product">افزودن بار</Link>,
+    });
+  }
+  if (fromLg && can("product:create")) {
+    items.push({
+      key: "addProduct",
+      label: <Link href="/dashboard/product">افزودن محصول</Link>,
+    });
+  }
+  if (fromLg && can("category:read")) {
+    items.push({
+      key: "addCategory",
+      label: <Link href="/dashboard/category">افزودن دسته بندی</Link>,
+    });
+  }
+  if (fromLg && can("property:read")) {
+    items.push({
+      key: "addProperty",
+      label: <Link href="/dashboard/property">افزودن ویژگی</Link>,
+    });
+  }
+  if (fromLg && can("role:create")) {
+    items.push({
+      key: "addRole",
+      label: <Link href="/dashboard/role">افزودن نقش</Link>,
+    });
+  }
+  if (fromLg && can("user:role-assign")) {
+    items.push({
+      key: "addUserRole",
+      label: <Link href="/dashboard/user">کاربران</Link>,
+    });
+  }
   items.push({
     key: "logout",
     label: (

@@ -1,3 +1,10 @@
+// ✅ رنگ‌های طرح: سبزِ آیتم فعال، پس‌زمینه گرم صفحه، سطح روشن نوار و هدر
+const themeColors = {
+  primary: "#64742b",
+  page: "#fdf2e0",
+  surface: "#fffcf7",
+};
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -18,10 +25,14 @@ module.exports = {
           textGray1: "#868686",
           textGray2: "#cccccc",
           bgGray: "#f7f7f7",
+          primary: themeColors.primary,
+          page: themeColors.page,
+          surface: themeColors.surface,
         },
         dark: {},
       },
     },
   },
   plugins: [],
+  themeColors,
 };

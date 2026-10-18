@@ -1,58 +1,113 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
-  getAllCategoriesISR,
-  getAllProductISR,
-} from "@/components/utils/actionsSSR";
+  getAllCategoriesClient,
+  getAllProductClient,
+} from "@/components/utils/actionsClient";
 import ProductsClient from "./components/products-client";
 
-export default async function ProductsPage({ searchParams }: any) {
-  // -----------------------------
-  // 1) دسته‌بندی‌ها، قیمت، موجودی، sort
-  // -----------------------------
-  const mainFilters = {
-    byCategory: searchParams.byCategory ?? "",
-    gte: searchParams.gte ?? "",
-    lte: searchParams.lte ?? "",
-    available: searchParams.available ?? "",
-    sort: searchParams.sort ?? "asc",
-  };
+function latestVariant(product: any) {
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  return variants.reduce((latest: any, item: any) => {
+    if (!latest) return item;
+    const latestTime = Date.parse(latest.createdAt || "") || latest.id || 0;
+    const itemTime = Date.parse(item.createdAt || "") || item.id || 0;
+    return itemTime >= latestTime ? item : latest;
+  }, null);
+}
 
-  // -----------------------------
-  // 2) فیلترهای داینامیک (هر پارامتر اضافی که میاد)
-  // -----------------------------
-  const dynamicFilters = Object.fromEntries(
-    Object.entries(searchParams).filter(
-      ([key]) =>
-        ![
-          "byCategory",
-          "gte",
-          "lte",
-          "available",
-          "sort",
-          "page",
-          "limit",
-        ].includes(key),
-    ),
-  );
+// ✅ همان ترتیب داشبورد: تاریخ تازه‌ترین تنوع، نه آیدی یا تاریخ محصول
+function productTime(product: any) {
+  const createdAt = latestVariant(product)?.createdAt;
+  const variantTime = Date.parse(createdAt || "");
+  if (createdAt && !Number.isNaN(variantTime)) return variantTime;
+  return 0;
+}
 
-  const query = {
-    ...mainFilters,
-    ...dynamicFilters,
-  };
+// ✅ جدیدترین تنوع اول؛ قیمت مرتب‌سازی همان ریال ذخیره‌شده است
+function listedProducts(
+  products: any[],
+  params: { get(name: string): string | null } | null
+) {
+  const byCategory = params?.get("byCategory");
+  const gte = params?.get("gte");
+  const lte = params?.get("lte");
+  const available = params?.get("available");
+  const sort = params?.get("sort") || "desc";
+  const categoryIds = byCategory ? byCategory.split(",").map(Number) : [];
+  const min = gte ? Number(gte) : null;
+  const max = lte ? Number(lte) : null;
 
-  // -----------------------------
-  // 3) fetch داده‌ها
-  // -----------------------------
-  const [products, categories] = await Promise.all([
-    getAllProductISR(query),
-    getAllCategoriesISR(),
-  ]);
-  console.log("test", products);
+  const filtered = products.filter((product) => {
+    const variants = Array.isArray(product.variants) ? product.variants : [];
+    // ✅ ردیف قدیمی بدون تنوع کارت روزانه نمی‌گیرد
+    if (variants.length === 0) return false;
+    const categories = Array.isArray(product.categories) ? product.categories : [];
+    if (categoryIds.length && !categories.some((cat: any) => categoryIds.includes(cat.id))) {
+      return false;
+    }
+    if (min !== null || max !== null) {
+      const inRange = variants.some((variant: any) => {
+        const price = Number(variant.price);
+        if (min !== null && price < min) return false;
+        if (max !== null && price > max) return false;
+        return true;
+      });
+      if (!inRange) return false;
+    }
+    if (available === "true" && !variants.some((variant: any) => Number(variant.stock) > 0)) {
+      return false;
+    }
+    return true;
+  });
 
-  const filteredCategories = categories.filter(
-    (cat: any) => cat.slug !== "noCats",
-  );
+  const priceOf = (product: any) => Number(latestVariant(product)?.price) || 0;
+  return filtered.sort((a, b) => {
+    if (sort === "asc") return productTime(a) - productTime(b);
+    if (sort === "cheap") return priceOf(a) - priceOf(b);
+    if (sort === "expensive") return priceOf(b) - priceOf(a);
+    return productTime(b) - productTime(a);
+  });
+}
+
+export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    let ignore = false;
+    // ✅ به‌جای getAllProductISR و getAllCategoriesISR؛ بدون کش ۶۰ ثانیه
+    async function load() {
+      try {
+        const [productList, categoryList] = await Promise.all([
+          getAllProductClient(),
+          getAllCategoriesClient(),
+        ]);
+        if (ignore) return;
+        setProducts(Array.isArray(productList) ? productList : []);
+        setCategories(Array.isArray(categoryList) ? categoryList : []);
+      } catch {
+        if (!ignore) {
+          setProducts([]);
+          setCategories([]);
+        }
+      }
+    }
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const filteredCategories = categories.filter((cat) => cat.slug !== "noCats");
 
   return (
-    <ProductsClient categories={filteredCategories} products={products.items} />
+    <ProductsClient
+      categories={filteredCategories}
+      products={listedProducts(products, searchParams)}
+    />
   );
 }
