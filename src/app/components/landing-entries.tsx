@@ -6,7 +6,7 @@ import Link from "next/link";
 const tiles = [
   {
     title: "میوه‌های روز",
-    href: "#daily-products",
+    href: "/daily-products",
     // نام تازه تا گوشی عکس کش‌شده قبلی را نگه ندارد
     src: "/landing/daily-crates.png",
   },

@@ -9,9 +9,16 @@ import {
 } from "@/components/utils/actionsClient";
 import ProductShowTable from "./components/show-table";
 
+function canOpenProduct(isGodUser: boolean, permissions: { name: string }[]) {
+  return (
+    isGodUser ||
+    permissions.some((item) => item.name === "product:read" || item.name === "product:create")
+  );
+}
+
 export default function AdminProductPage() {
-  const [allProducts, setAllProducts] = useState([]);
-  const [allCategories, setAllCategories] = useState([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allCategories, setAllCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // گرفتن اطلاعات کاربر از استور
@@ -41,6 +48,11 @@ export default function AdminProductPage() {
   }, []);
 
   if (loading) return <div>در حال بارگذاری محصولات...</div>;
+
+  // ✅ مجوز product:read مسیر داشبورد محصول را باز می‌کند
+  if (!canOpenProduct(isGodUser, userPermission)) {
+    return <div>به این صفحه دسترسی ندارید</div>;
+  }
 
   return (
     <>

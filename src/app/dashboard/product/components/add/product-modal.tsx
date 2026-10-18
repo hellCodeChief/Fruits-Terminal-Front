@@ -1,7 +1,7 @@
 "use client";
 
 import { Modal } from "antd";
-import SimpleAdd from "../simple-add";
+import ProductAdd from "../product-add";
 
 const AddProductModalApp = ({
   allCategories,
@@ -27,8 +27,8 @@ const AddProductModalApp = ({
       destroyOnClose
     >
       {/* ✅ کارت وسط صفحه؛ اگر فرم بلند است داخل خودش اسکرول می‌شود */}
-      {/* ✅ ویرایش همان فرم افزودن ساده است، نه فرم محدود قبلی */}
-      <SimpleAdd
+      {/* ✅ ویرایش کاتالوگ همان فرم محصول است و به dailyProduct نمی‌رود */}
+      <ProductAdd
         categories={allCategories}
         products={products}
         editing={isEdit ? editProductData : null}

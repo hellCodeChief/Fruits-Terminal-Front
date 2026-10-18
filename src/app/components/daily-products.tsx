@@ -3,16 +3,16 @@
 import DailyProductCard, {
   variantSortTime,
 } from "@/components/daily-product-card/daily-product-card";
-import { getAllProductClient } from "@/components/utils/actionsClient";
+import { getAllDailyProductClient } from "@/components/utils/actionsClient";
 import { useEffect, useState } from "react";
 
-// ✅ همان خواندن زنده صفحه محصولات؛ آخرین تنوع هر محصول، تازه‌ترین اول
+// ✅ ویترین از جدول dailyProduct؛ تازه‌ترین اول
 export default function DailyProducts() {
   const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
     let ignore = false;
-    getAllProductClient().then((list) => {
+    getAllDailyProductClient().then((list) => {
       if (ignore) return;
       const items = Array.isArray(list) ? list : [];
       // ✅ ردیف قدیمی بدون تنوع کارت روزانه نمی‌گیرد
@@ -28,17 +28,17 @@ export default function DailyProducts() {
     };
   }, []);
 
-  if (!products.length) return null;
-
   return (
     <section className="mt-4 w-full min-w-0 max-w-full">
-      {/* ✅ عنوان همین بلوک لندینگ */}
+      {/* ✅ عنوان ویترین روزانه */}
       <h2 className="font-bold text-xl">میوه‌های روز</h2>
-      <div className="mt-4 flex w-full min-w-0 max-w-full flex-col gap-3">
-        {products.map((product) => (
-          <DailyProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {products.length > 0 ? (
+        <div className="mt-4 flex w-full min-w-0 max-w-full flex-col gap-3">
+          {products.map((product) => (
+            <DailyProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

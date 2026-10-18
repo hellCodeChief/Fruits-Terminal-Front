@@ -1,10 +1,9 @@
 "use client";
 
 import {
-  addProductClient,
-  addProductVariantClient,
-  editProductClient,
-  editProductVariantBatchClient,
+  addDailyProductClient,
+  editDailyProductClient,
+  getAllDailyProductClient,
   uploadImage,
 } from "@/components/utils/actionsClient";
 import { CameraOutlined, PictureOutlined } from "@ant-design/icons";
@@ -14,12 +13,11 @@ import {
   Form,
   Input,
   InputNumber,
-  Select,
   Switch,
   Upload,
   message,
 } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const MAX_EDGE = 1200;
 
@@ -68,7 +66,7 @@ type KnownVariant = {
   createdAt?: string;
   desc?: string;
   minOrder?: number | string | null;
-  files?: { id: number }[];
+  files?: { id: number; usage?: string }[];
 };
 
 type KnownProduct = {
@@ -76,7 +74,7 @@ type KnownProduct = {
   slug: string;
   isActive?: boolean;
   categories?: { id: number }[];
-  files?: { id: number }[];
+  files?: { id: number; usage?: string }[];
   variants?: KnownVariant[];
 };
 
@@ -116,7 +114,7 @@ function latestPrice(product: KnownProduct) {
   return latestVariant(product)?.price;
 }
 
-function newestFile(files?: { id: number }[]) {
+function newestFile(files?: { id: number; usage?: string }[]) {
   if (!files?.length) return null;
   return files.reduce((best, file) => (file.id > best.id ? file : best));
 }
@@ -126,12 +124,11 @@ function existingImage(product: KnownProduct) {
   const variantFile = newestFile(latestVariant(product)?.files);
   const file = variantFile || newestFile(product.files);
   if (!file) return "";
-  const usage = variantFile ? "product-variant" : "product";
+  const usage = file.usage || (variantFile ? "product-variant" : "product");
   return `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${file.id}/${usage}`;
 }
 
 export default function SimpleAdd({
-  categories,
   products,
   onSaved,
   editing,
@@ -145,6 +142,17 @@ export default function SimpleAdd({
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [saving, setSaving] = useState(false);
+  const [stallProducts, setStallProducts] = useState<KnownProduct[]>([]);
+
+  useEffect(() => {
+    let ignore = false;
+    getAllDailyProductClient().then((list) => {
+      if (!ignore) setStallProducts(Array.isArray(list) ? list : []);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const showPhoto = (file: File) => {
     if (preview) URL.revokeObjectURL(preview);
@@ -167,7 +175,6 @@ export default function SimpleAdd({
     price: number;
     minOrder: number;
     description?: string;
-    categoryId?: number;
     isActive?: boolean;
   }) => {
     if (!editing && !photo) {
@@ -175,79 +182,28 @@ export default function SimpleAdd({
       return;
     }
     const name = values.name.trim();
-    const existing = (Array.isArray(products) ? products : []).find(
-      (product) => normalizeName(product.slug || "") === normalizeName(name)
-    );
     setSaving(true);
     try {
-      const variantPayload = {
-        name,
-        slug: `p${Date.now().toString(36)}`,
-        stock: 0,
-        desc: values.description?.trim() || "",
-        isActive: true,
-        isDefault: true,
+      const payload = {
+        slug: name,
         price: Number(values.price),
-        // ✅ حداقل سفارش به کیلو، روی همین تنوع
         minOrder: Number(values.minOrder),
-        props: [],
+        desc: values.description?.trim() || "",
+        isActive: values.isActive !== false,
       };
 
-      // ✅ ویرایش همان محصول است: نام، قیمت ریال، توضیح، فعال، و عکس در صورت انتخاب
+      // ✅ ویرایش فقط همین ردیف dailyProduct؛ بقیه ردیف‌ها می‌مانند
       if (editing) {
-        const active = values.isActive !== false;
-        // ✅ بدنه ویرایش categoriesId و categoryIds ندارد؛ وایت‌لیست هر دو را رد می‌کند
-        const productRes = await editProductClient(
-          {
-            slug: name,
-            isActive: active,
-          },
-          editing.id
-        );
+        const productRes = await editDailyProductClient(payload, editing.id);
         const productBody = await productRes.json().catch(() => null);
         if (!productRes.ok) {
           throw new Error(errorText(productBody, "ویرایش انجام نشد"));
         }
 
-        const current = latestVariant(editing);
-        let photoTarget = current?.id;
-        let photoUsage: "product" | "product-variant" = photoTarget
-          ? "product-variant"
-          : "product";
-        if (photoTarget) {
-          const variantRes = await editProductVariantBatchClient({
-            variants: [
-              {
-                id: photoTarget,
-                name,
-                desc: values.description?.trim() || "",
-                price: Number(values.price),
-                minOrder: Number(values.minOrder),
-                isActive: active,
-                productId: editing.id,
-              },
-            ],
-          });
-          const variantBody = await variantRes.json().catch(() => null);
-          if (!variantRes.ok) {
-            throw new Error(errorText(variantBody, "ویرایش قیمت انجام نشد"));
-          }
-        } else {
-          const variantRes = await addProductVariantClient({
-            variants: [{ ...variantPayload, isActive: active, productId: editing.id }],
-          });
-          const created = await variantRes.json().catch(() => null);
-          photoTarget = Array.isArray(created) ? created[0]?.id : created?.id;
-          photoUsage = photoTarget ? "product-variant" : "product";
-          if (!variantRes.ok || !photoTarget) {
-            throw new Error(errorText(created, "ثبت قیمت انجام نشد"));
-          }
-        }
-
         if (photo) {
           const body = new FormData();
           body.append("file", photo);
-          await uploadImage(photoTarget || editing.id, photoUsage, body);
+          await uploadImage(editing.id, "daily-product", body);
         }
 
         form.resetFields();
@@ -259,42 +215,17 @@ export default function SimpleAdd({
         return;
       }
 
-      // ✅ نام تکراری فقط تنوع جدید می‌سازد؛ تنوع‌های قبلی می‌مانند
-      if (existing) {
-        const variantRes = await addProductVariantClient({
-          variants: [{ ...variantPayload, productId: existing.id }],
-        });
-        const created = await variantRes.json().catch(() => null);
-        const variantId = Array.isArray(created) ? created[0]?.id : created?.id;
-        if (!variantRes.ok || !variantId) {
-          throw new Error(errorText(created, "ثبت قیمت انجام نشد"));
-        }
-        const body = new FormData();
-        body.append("file", photo);
-        await uploadImage(variantId, "product-variant", body);
-      } else {
-        const productRes = await addProductClient({
-          slug: name,
-          categoryIds: values.categoryId ? [values.categoryId] : [],
-          isActive: true,
-        });
-        const product = await productRes.json().catch(() => ({}));
-        if (!productRes.ok || !product?.id) {
-          throw new Error(errorText(product, "ثبت انجام نشد"));
-        }
-
-        const variantRes = await addProductVariantClient({
-          variants: [{ ...variantPayload, productId: product.id }],
-        });
-        if (!variantRes.ok) {
-          const variantBody = await variantRes.json().catch(() => ({}));
-          throw new Error(errorText(variantBody, "ثبت قیمت انجام نشد"));
-        }
-
-        const body = new FormData();
-        body.append("file", photo);
-        await uploadImage(product.id, "product", body);
+      // ✅ حجره ردیف جدید در dailyProduct است؛ نام تکراری ردیف‌های قبلی را پاک نمی‌کند
+      const productRes = await addDailyProductClient(payload);
+      const product = await productRes.json().catch(() => ({}));
+      if (!productRes.ok || !product?.id) {
+        throw new Error(errorText(product, "ثبت انجام نشد"));
       }
+
+      if (!photo) throw new Error("تصویر را انتخاب کنید");
+      const body = new FormData();
+      body.append("file", photo);
+      await uploadImage(product.id, "daily-product", body);
 
       form.resetFields();
       if (preview) URL.revokeObjectURL(preview);
@@ -389,7 +320,7 @@ export default function SimpleAdd({
         {/* ✅ پیشنهاد از اسلاگ محصولات؛ قیمت ریال همان عدد ذخیره‌شده */}
         <AutoComplete
           style={{ width: "100%" }}
-          options={suggestionProducts(products).map((product) => {
+          options={suggestionProducts(editing ? products : stallProducts).map((product) => {
             const price = latestPrice(product);
             const priceText =
               price === undefined || price === null || price === ""
@@ -450,18 +381,7 @@ export default function SimpleAdd({
         <Input.TextArea rows={3} />
       </Form.Item>
 
-      {!editing && (
-        <Form.Item label="دسته‌بندی" name="categoryId">
-          <Select
-            allowClear
-            options={(Array.isArray(categories) ? categories : []).map((category) => ({
-              label: category.displayName,
-              value: category.id,
-            }))}
-          />
-        </Form.Item>
-      )}
-
+      {/* ✅ دسته ستون جدول حجره نیست */}
       {editing && (
         <Form.Item label="فعال" name="isActive" valuePropName="checked">
           <Switch />

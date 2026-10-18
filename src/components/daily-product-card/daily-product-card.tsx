@@ -3,7 +3,7 @@
 import { Card, Modal } from "antd";
 import { ReactNode, useEffect, useRef, useState } from "react";
 
-export type DailyFile = { id: number };
+export type DailyFile = { id: number; usage?: string };
 
 export type DailyVariant = {
   id?: number;
@@ -51,7 +51,8 @@ function dailyImageUrl(product?: DailyProduct | null) {
   const variantFile = newestFile(latestDailyVariant(product)?.files);
   const file = variantFile || newestFile(product?.files);
   if (!file) return null;
-  const usage = variantFile ? "product-variant" : "product";
+  // ✅ usage روی فایل؛ حجره daily-product است و کاتالوگ همان product
+  const usage = file.usage || (variantFile ? "product-variant" : "product");
   return `${BASE_URL}/files/${file.id}/${usage}`;
 }
 
